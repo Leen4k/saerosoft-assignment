@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { ActivityFeed } from '../lib/ActivityFeed';
+import { useState } from "react";
+import { ActivityFeed } from "../../lib/ActivityFeed";
 
 export const ActivityFeedComponent = () => {
   const [feed] = useState(() => new ActivityFeed());
@@ -43,4 +43,4 @@ export const ActivityFeedComponent = () => {
       </ul>
     </div>
   );
-}; 
+};

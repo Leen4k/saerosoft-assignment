@@ -1,12 +1,12 @@
-import { ListNode } from '../types';
+import { DoublyLinkedList } from "../utils/LinkList";
+import { ListNode } from "../utils/LinkedList";
 
 export class BrowserHistory {
+  private list = new DoublyLinkedList<string>();
   private current: ListNode<string> | null = null;
 
   visitPage(url: string): void {
-    const node: ListNode<string> = { value: url, prev: this.current, next: null };
-    if (this.current) this.current.next = node;
-    this.current = node;
+    this.current = this.list.addToHead(url);
   }
 
   goBack(): string | null {
@@ -24,4 +24,4 @@ export class BrowserHistory {
   getCurrentPage(): string | null {
     return this.current?.value ?? null;
   }
-} 
+}

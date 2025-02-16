@@ -313,3 +313,5 @@ const BrowserHistoryComponent = () => {
 };
 
 export default BrowserHistoryComponent;
+
+refactoring

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BrowserHistory } from "../lib/BrowserHistory";
+import { BrowserHistory } from "../../lib/BrowserHistory";
 
 export const BrowserHistoryComponent = () => {
   const [history] = useState(() => new BrowserHistory());

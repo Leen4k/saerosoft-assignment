@@ -1,17 +1,17 @@
-import { useState } from 'react';
-import { LRUCache } from '../lib/LRUCache';
+import { useState } from "react";
+import { LRUCache } from "../../lib/LRUCache";
 
 export const LRUCacheComponent = () => {
   const [cache] = useState(() => new LRUCache(3));
-  const [key, setKey] = useState('');
-  const [value, setValue] = useState('');
+  const [key, setKey] = useState("");
+  const [value, setValue] = useState("");
   const [result, setResult] = useState<string | null>(null);
 
   const handlePut = () => {
     if (key && value) {
       cache.put(key, value);
-      setKey('');
-      setValue('');
+      setKey("");
+      setValue("");
       setResult(`Added: ${key} -> ${value}`);
     }
   };
@@ -19,8 +19,8 @@ export const LRUCacheComponent = () => {
   const handleGet = () => {
     if (key) {
       const value = cache.get(key);
-      setResult(value ? `Found: ${value}` : 'Not found');
-      setKey('');
+      setResult(value ? `Found: ${value}` : "Not found");
+      setKey("");
     }
   };
 
@@ -60,4 +60,4 @@ export const LRUCacheComponent = () => {
       {result && <p className="text-gray-600">{result}</p>}
     </div>
   );
-}; 
+};

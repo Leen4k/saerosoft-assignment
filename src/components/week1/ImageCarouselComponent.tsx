@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ImageCarousel } from '../lib/ImageCarousel';
+import { ImageCarousel } from '../../lib/ImageCarousel';
 
 export const ImageCarouselComponent = () => {
   const [carousel] = useState(() => new ImageCarousel());
