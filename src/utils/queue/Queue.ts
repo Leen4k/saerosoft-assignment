@@ -1,16 +1,16 @@
-export class Stack<T> {
-  public items: T[] = [];
+export class Queue<T> {
+  items: T[] = [];
 
-  push(item: T): void {
+  enqueue(item: T): void {
     this.items.push(item);
   }
 
-  pop(): T | undefined {
-    return this.items.pop();
+  dequeue(): T | undefined {
+    return this.items.shift();
   }
 
   peek(): T | undefined {
-    return this.items[this.items.length - 1];
+    return this.items[0];
   }
 
   isEmpty(): boolean {
@@ -22,6 +22,6 @@ export class Stack<T> {
   }
 
   getAllItems(): T[] {
-    return this.items;
+    return [...this.items];
   }
 }

@@ -1,5 +1,5 @@
-import { ListNode } from "../utils/LinkedList";
-import { DoublyLinkedList } from "../utils/LinkList";
+import { ListNode } from "../utils/linklist/LinkList";
+import { DoublyLinkedList } from "../utils/linklist/LinkList";
 
 export class LRUCache {
   private capacity: number;

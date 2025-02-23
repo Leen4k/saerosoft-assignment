@@ -1,36 +1,48 @@
 import React, { useState } from "react";
 import { Stack } from "../../utils/stack/Stack";
+import Modal from "../shared/Modal";
 
 const NestedModalStack = () => {
   const [modalStack] = useState(new Stack<string>());
-  const [, setRender] = useState(0);
+  const [render, setRender] = useState(0);
 
-  const openModal = (modalId: string): void => {
-    modalStack.push(modalId);
+  const openModal = (): void => {
+    const newModalId = `Modal ${modalStack.size() + 1}`;
+    modalStack.push(newModalId);
     setRender((prev) => prev + 1);
   };
 
   const closeModal = (): void => {
-    modalStack.pop();
+    if (!modalStack.isEmpty()) {
+      modalStack.pop();
+      setRender((prev) => prev + 1);
+    }
+  };
+
+  const closeAllModals = (): void => {
+    modalStack.items = [];
     setRender((prev) => prev + 1);
   };
 
-  const getAllModals = (): string[] => [...modalStack["items"]].reverse();
-
   return (
-    <div>
-      <h1>Open Modals</h1>
-      <ul>
-        {getAllModals().map((modalId, i) => (
-          <li key={i}>{modalId}</li>
-        ))}
-      </ul>
-      <button onClick={() => openModal(`Modal ${modalStack.size() + 1}`)}>
-        Open New Modal
+    <div className="flex flex-col items-center p-4">
+      <h1 className="text-2xl font-bold">Nested Modals</h1>
+      <button
+        className="mt-4 bg-blue-500 text-white px-4 py-2 rounded"
+        onClick={openModal}
+      >
+        Open Modal
       </button>
-      <button onClick={closeModal} disabled={modalStack.isEmpty()}>
-        Close Last Modal
-      </button>
+
+      {modalStack.getAllItems().map((modalId, i) => (
+        <Modal
+          key={i}
+          modalId={modalId}
+          onClose={closeModal}
+          onCloseAll={closeAllModals}
+          onOpenNew={openModal}
+        />
+      ))}
     </div>
   );
 };

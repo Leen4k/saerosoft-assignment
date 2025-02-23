@@ -21,34 +21,46 @@ const BrowserNavigationHistory = () => {
   const [search, setSearch] = useState<string>("");
 
   const debouncedSearch = useDebounce(search, 300);
-
   const isSearchDisabled = debouncedSearch === currentPage;
 
   const visitPage = (url: string): void => {
     if (url !== currentPage) {
+      const newHistory = new Stack<string>();
+      newHistory.items = [...history.items, currentPage];
+      setHistory(newHistory);
+
       setCurrentPage(url);
-      history.push(url);
       setForwardHistory(new Stack<string>());
     }
   };
 
   const goBack = (): void => {
     if (!history.isEmpty()) {
-      const previousPage = history.pop();
-      if (previousPage) {
-        forwardHistory.push(currentPage);
-        setCurrentPage(previousPage);
-      }
+      const newForwardHistory = new Stack<string>();
+      newForwardHistory.items = [...forwardHistory.items, currentPage];
+      setForwardHistory(newForwardHistory);
+
+      const newHistory = new Stack<string>();
+      newHistory.items = [...history.items];
+      const previousPage = newHistory.pop();
+      setHistory(newHistory);
+
+      if (previousPage) setCurrentPage(previousPage);
     }
   };
 
   const goForward = (): void => {
     if (!forwardHistory.isEmpty()) {
-      const nextPage = forwardHistory.pop();
-      if (nextPage) {
-        history.push(currentPage);
-        setCurrentPage(nextPage);
-      }
+      const newHistory = new Stack<string>();
+      newHistory.items = [...history.items, currentPage];
+      setHistory(newHistory);
+
+      const newForwardHistory = new Stack<string>();
+      newForwardHistory.items = [...forwardHistory.items];
+      const nextPage = newForwardHistory.pop();
+      setForwardHistory(newForwardHistory);
+
+      if (nextPage) setCurrentPage(nextPage);
     }
   };
 

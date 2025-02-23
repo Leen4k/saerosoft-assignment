@@ -1,5 +1,6 @@
-import { DoublyLinkedList } from "../utils/LinkList";
-import { ListNode } from "../utils/LinkedList";
+import { ListNode } from "../utils/linklist/LinkList";
+import { DoublyLinkedList } from "../utils/linklist/LinkList";
+
 
 export class BrowserHistory {
   private list = new DoublyLinkedList<string>();

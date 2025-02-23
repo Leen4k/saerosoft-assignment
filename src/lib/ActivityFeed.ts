@@ -1,5 +1,4 @@
-import { DoublyLinkedList } from "../utils/LinkList";
-import { ListNode } from "../utils/LinkedList";
+import { DoublyLinkedList } from "../utils/linklist/LinkList";
 
 export class ActivityFeed {
   private list = new DoublyLinkedList<string>();
@@ -9,7 +8,7 @@ export class ActivityFeed {
   }
 
   deleteActivity(index: number): void {
-    if (index >= this.list.size) return;
+    if (index >= this.list.getSize()) return;
     let current = this.list.head;
     for (let i = 0; i < index && current; i++) {
       current = current.next;

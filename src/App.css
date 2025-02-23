@@ -1,3 +1,5 @@
+@import "tailwindcss";
+
 #root {
   max-width: 1280px;
   margin: 0 auto;
@@ -45,4 +47,16 @@
   display: flex;
   justify-content: center;
   gap: 4rem;
+}
+
+input {
+  @apply border-2 border-gray-300 rounded-md p-2;
+}
+
+button {
+  @apply bg-blue-500 text-white p-2 rounded-md disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed disabled:opacity-50;
+}
+
+button:hover {
+  @apply bg-blue-600;
 }

@@ -10,6 +10,9 @@ import Week2Assignment from "./components/week2/Week2Assignment";
 import NestedModalStack from "./components/week2/NestedModalStack";
 import UndoRedoTextEditor from "./components/week2/UndoRedoTextEditor";
 import BrowserNavigationHistory from "./components/week2/BrowserNavigationHistory";
+import Week3Assignment from "./components/week3/Week3Assignment";
+import AiChat from "./components/week3/AiChatQueue";
+import Download from "./components/week3/Downloadqueue";
 
 const App = () => {
   return (
@@ -30,6 +33,11 @@ const App = () => {
             <li>
               <Link to="/week2-assignments" className="hover:text-gray-300">
                 Week 2 Assignments
+              </Link>
+            </li>
+            <li>
+              <Link to="/week3-assignments" className="hover:text-gray-300">
+                Week 3 Assignments
               </Link>
             </li>
           </ul>
@@ -55,6 +63,7 @@ const App = () => {
               path="/week1-assignments/activity-feed"
               element={<ActivityFeedComponent />}
             />
+            {/* week 2 */}
             <Route path="/week2-assignments" element={<Week2Assignment />} />
             <Route
               path="/week2-assignments/undo-redo-text-editor"
@@ -68,6 +77,10 @@ const App = () => {
               path="/week2-assignments/nested-modal-stack"
               element={<NestedModalStack />}
             />
+            {/* week 3 */}
+            <Route path="/week3-assignments" element={<Week3Assignment />} />
+            <Route path="/week3-assignments/ai-chat" element={<AiChat />} />
+            <Route path="/week3-assignments/download" element={<Download />} />
           </Routes>
         </div>
       </div>

@@ -1,5 +1,6 @@
-import { CircularLinkedList } from "../utils/CircularLinkedList";
-import { ListNode } from "../utils/LinkedList";
+import { ListNode } from "../utils/linklist/LinkList";
+import { CircularLinkedList } from "../utils/linklist/LinkList";
+
 
 export class ImageCarousel {
   private list = new CircularLinkedList<string>();
