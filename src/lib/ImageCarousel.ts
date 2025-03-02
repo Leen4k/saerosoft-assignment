@@ -1,13 +1,11 @@
-import { ListNode } from "../utils/linklist/LinkList";
-import { CircularLinkedList } from "../utils/linklist/LinkList";
-
+import { ListNode, CircularLinkedList } from "../utils/collections/collection";
 
 export class ImageCarousel {
   private list = new CircularLinkedList<string>();
   private current: ListNode<string> | null = null;
 
   addImage(url: string): void {
-    const node = this.list.addToHead(url);
+    const node = this.list.push(url);
     if (!this.current) {
       this.current = node;
     }

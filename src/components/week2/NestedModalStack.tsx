@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Stack } from "../../utils/stack/Stack";
+import { Stack } from "../../utils/collections/collection";
 import Modal from "../shared/Modal";
 
 const NestedModalStack = () => {
@@ -20,7 +20,9 @@ const NestedModalStack = () => {
   };
 
   const closeAllModals = (): void => {
-    modalStack.items = [];
+    while (!modalStack.isEmpty()) {
+      modalStack.pop();
+    }
     setRender((prev) => prev + 1);
   };
 

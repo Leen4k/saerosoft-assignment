@@ -1,13 +1,11 @@
-import { ListNode } from "../utils/linklist/LinkList";
-import { DoublyLinkedList } from "../utils/linklist/LinkList";
-
+import { ListNode, DoublyLinkedList } from "../utils/collections/collection";
 
 export class BrowserHistory {
   private list = new DoublyLinkedList<string>();
   private current: ListNode<string> | null = null;
 
   visitPage(url: string): void {
-    this.current = this.list.addToHead(url);
+    this.current = this.list.push(url);
   }
 
   goBack(): string | null {

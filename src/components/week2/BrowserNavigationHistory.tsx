@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Stack } from "../../utils/stack/Stack";
+import { Stack } from "../../utils/collections/collection";
 
 const useDebounce = (value: string, delay: number): string => {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -16,8 +16,8 @@ const useDebounce = (value: string, delay: number): string => {
 
 const BrowserNavigationHistory = () => {
   const [currentPage, setCurrentPage] = useState<string>("");
-  const [history, setHistory] = useState(new Stack<string>());
-  const [forwardHistory, setForwardHistory] = useState(new Stack<string>());
+  const [history] = useState(new Stack<string>());
+  const [forwardHistory] = useState(new Stack<string>());
   const [search, setSearch] = useState<string>("");
 
   const debouncedSearch = useDebounce(search, 300);
@@ -25,42 +25,33 @@ const BrowserNavigationHistory = () => {
 
   const visitPage = (url: string): void => {
     if (url !== currentPage) {
-      const newHistory = new Stack<string>();
-      newHistory.items = [...history.items, currentPage];
-      setHistory(newHistory);
-
+      if (currentPage) {
+        history.push(currentPage);
+      }
       setCurrentPage(url);
-      setForwardHistory(new Stack<string>());
+      while (!forwardHistory.isEmpty()) {
+        forwardHistory.pop();
+      }
     }
   };
 
   const goBack = (): void => {
     if (!history.isEmpty()) {
-      const newForwardHistory = new Stack<string>();
-      newForwardHistory.items = [...forwardHistory.items, currentPage];
-      setForwardHistory(newForwardHistory);
-
-      const newHistory = new Stack<string>();
-      newHistory.items = [...history.items];
-      const previousPage = newHistory.pop();
-      setHistory(newHistory);
-
-      if (previousPage) setCurrentPage(previousPage);
+      const previousPage = history.pop();
+      if (previousPage) {
+        forwardHistory.push(currentPage);
+        setCurrentPage(previousPage);
+      }
     }
   };
 
   const goForward = (): void => {
     if (!forwardHistory.isEmpty()) {
-      const newHistory = new Stack<string>();
-      newHistory.items = [...history.items, currentPage];
-      setHistory(newHistory);
-
-      const newForwardHistory = new Stack<string>();
-      newForwardHistory.items = [...forwardHistory.items];
-      const nextPage = newForwardHistory.pop();
-      setForwardHistory(newForwardHistory);
-
-      if (nextPage) setCurrentPage(nextPage);
+      const nextPage = forwardHistory.pop();
+      if (nextPage) {
+        history.push(currentPage);
+        setCurrentPage(nextPage);
+      }
     }
   };
 

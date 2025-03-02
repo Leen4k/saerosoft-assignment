@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Stack } from "../../utils/stack/Stack";
+import { Stack } from "../../utils/collections/collection";
 
 const UndoRedoTextEditor = () => {
   const [text, setText] = useState("");
@@ -9,9 +9,9 @@ const UndoRedoTextEditor = () => {
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newText = e.target.value;
 
-    //truncation history
-    if (currentIndex < history.size() - 1) {
-      history.items = history.items.slice(0, currentIndex + 1);
+    // truncate history
+    while (currentIndex < history.size() - 1) {
+      history.pop();
     }
 
     history.push(newText);
@@ -22,14 +22,14 @@ const UndoRedoTextEditor = () => {
   const undo = () => {
     if (currentIndex > 0) {
       setCurrentIndex((prev) => prev - 1);
-      setText(history.items[currentIndex - 1]);
+      setText(history.getAllItems()[currentIndex - 1]);
     }
   };
 
   const redo = () => {
     if (currentIndex < history.size() - 1) {
       setCurrentIndex((prev) => prev + 1);
-      setText(history.items[currentIndex + 1]);
+      setText(history.getAllItems()[currentIndex + 1]);
     }
   };
 

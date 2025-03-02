@@ -1,8 +1,16 @@
-import React, { useState, useEffect, useRef } from "react";
-import { PriorityQueue, DownloadItem } from "../../utils/queue/PriorityQueue";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { PriorityQueue } from "../../utils/collections/collection";
 
-const DownloadManager: React.FC = () => {
-  const [downloadQueue] = useState(new PriorityQueue());
+interface DownloadItem {
+  fileName: string;
+  priority: number;
+  downloadTime: number;
+  startTime?: number;
+  isDownloading?: boolean;
+}
+
+const DownloadManager = () => {
+  const [downloadQueue] = useState(new PriorityQueue<DownloadItem>());
   const [activeDownloads, setActiveDownloads] = useState<DownloadItem[]>([]);
   const [completedDownloads, setCompletedDownloads] = useState<DownloadItem[]>(
     []
@@ -12,7 +20,7 @@ const DownloadManager: React.FC = () => {
   const [formData, setFormData] = useState({
     fileName: "",
     priority: 1,
-    downloadTime: 50,
+    downloadTime: 1,
   });
 
   const intervalRef = useRef<number | null>(null);
@@ -38,54 +46,65 @@ const DownloadManager: React.FC = () => {
       priority,
       downloadTime,
       isDownloading: false,
+      startTime: undefined,
     });
     addLog(`Added to queue: ${fileName} (priority ${priority})`);
   };
 
-  const checkQueue = (): void => {
-    while (activeDownloads.length < 3 && !downloadQueue.isEmpty()) {
+  const checkQueue = useCallback(() => {
+    const now = getCurrentTime();
+    const updatedActive = [...activeDownloads];
+    const newCompleted: DownloadItem[] = [];
+
+    for (let i = updatedActive.length - 1; i >= 0; i--) {
+      const download = updatedActive[i];
+      if (
+        download.startTime !== undefined &&
+        now >= download.startTime + download.downloadTime
+      ) {
+        const completed = updatedActive.splice(i, 1)[0];
+        newCompleted.push(completed);
+        addLog(`Download completed: ${completed.fileName}`);
+      }
+    }
+
+    if (newCompleted.length > 0) {
+      setCompletedDownloads((prev) => [...prev, ...newCompleted]);
+    }
+
+    while (updatedActive.length < 3 && !downloadQueue.isEmpty()) {
       const nextDownload = downloadQueue.dequeue();
       if (nextDownload) {
-        nextDownload.startTime = getCurrentTime();
+        nextDownload.startTime = now;
         nextDownload.isDownloading = true;
-        setActiveDownloads((prev) => [...prev, nextDownload]);
+        updatedActive.push(nextDownload);
         addLog(
           `Download started: ${nextDownload.fileName} (priority ${nextDownload.priority})`
         );
       }
     }
 
-    setActiveDownloads((prevDownloads) => {
-      const completed: DownloadItem[] = [];
-      const stillActive = prevDownloads.filter((download) => {
-        const isComplete =
-          getCurrentTime() >= (download.startTime || 0) + download.downloadTime;
-        if (isComplete && download.isDownloading) {
-          addLog(`Download completed: ${download.fileName}`);
-          download.isDownloading = false;
-          completed.push(download);
-        }
-        return !isComplete;
-      });
-
-      setCompletedDownloads((prev) => [...prev, ...completed]);
-
-      return stillActive;
-    });
-  };
+    setActiveDownloads(updatedActive);
+  }, [activeDownloads, downloadQueue]);
 
   useEffect(() => {
-    intervalRef.current = setInterval(() => {
-      setCurrentTime((prev) => prev + 0.1);
-      checkQueue();
+    intervalRef.current = window.setInterval(() => {
+      setCurrentTime((prev) => {
+        const newTime = prev + 0.1;
+        return Number(newTime.toFixed(1));
+      });
     }, 100);
 
     return () => {
       if (intervalRef.current) {
-        clearInterval(intervalRef.current);
+        window.clearInterval(intervalRef.current);
       }
     };
   }, []);
+
+  useEffect(() => {
+    checkQueue();
+  }, [currentTime, checkQueue]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -166,10 +185,7 @@ const DownloadManager: React.FC = () => {
             type="submit"
             className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={
-              !formData.fileName ||
-              !formData.priority ||
-              !formData.downloadTime ||
-              activeDownloads.length >= 3
+              !formData.fileName || !formData.priority || !formData.downloadTime
             }
           >
             Add Download
@@ -213,6 +229,19 @@ const DownloadManager: React.FC = () => {
                 {download.fileName} (Priority: {download.priority})
               </div>
             ))}
+          </div>
+        </div>
+
+        <div className="mb-4">
+          <h3 className="font-bold mb-2">Download Queue:</h3>
+          <div className="space-y-2">
+            {downloadQueue
+              .getAllItems()
+              .map((download: DownloadItem, index: number) => (
+                <div key={index} className="p-2 bg-yellow-100 rounded">
+                  {download.fileName} (Priority: {download.priority})
+                </div>
+              ))}
           </div>
         </div>
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { Queue } from "../../utils/queue/Queue";
-import { AI_RESPONSES } from "../../utils/constants/AiConstant";
+import { Queue } from "../../utils/collections/collection";
+import { AiResponses } from "../../utils/constants/aiConstant";
 
 interface Message {
   text: string;
@@ -8,7 +8,7 @@ interface Message {
   timestamp: number;
 }
 
-const AiChat: React.FC = () => {
+const AiChat = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState("");
   const aiQueue = useRef(new Queue<Message>());
@@ -16,8 +16,8 @@ const AiChat: React.FC = () => {
   const [queueLength, setQueueLength] = useState(0);
 
   const getRandomAiResponse = (): string => {
-    const randomIndex = Math.floor(Math.random() * AI_RESPONSES.length);
-    return AI_RESPONSES[randomIndex];
+    const randomIndex = Math.floor(Math.random() * AiResponses.length);
+    return AiResponses[randomIndex];
   };
 
   const processNextAiResponse = useCallback(async () => {

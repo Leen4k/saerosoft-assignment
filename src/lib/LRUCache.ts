@@ -1,5 +1,4 @@
-import { ListNode } from "../utils/linklist/LinkList";
-import { DoublyLinkedList } from "../utils/linklist/LinkList";
+import { ListNode, DoublyLinkedList } from "../utils/collections/collection";
 
 export class LRUCache {
   private capacity: number;
@@ -19,13 +18,17 @@ export class LRUCache {
       return;
     }
 
-    const node = this.list.addToHead([key, value]);
+    const node = this.list.push([key, value]);
     this.cache.set(key, node);
 
-    if (this.list.size > this.capacity) {
-      const tail = this.list.tail!;
-      this.cache.delete(tail.value[0]);
-      this.list.removeNode(tail);
+    if (this.list.size() > this.capacity) {
+      const items = this.list.getAllItems();
+      const oldestItem = items[items.length - 1];
+      this.cache.delete(oldestItem[0]);
+      // Remove the oldest item by popping until we're at capacity
+      while (this.list.size() > this.capacity) {
+        this.list.pop();
+      }
     }
   }
 
@@ -37,6 +40,6 @@ export class LRUCache {
   }
 
   size(): number {
-    return this.list.size;
+    return this.list.size();
   }
 }

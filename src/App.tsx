@@ -13,6 +13,9 @@ import BrowserNavigationHistory from "./components/week2/BrowserNavigationHistor
 import Week3Assignment from "./components/week3/Week3Assignment";
 import AiChat from "./components/week3/AiChatQueue";
 import Download from "./components/week3/Downloadqueue";
+import Week4Assignment from "./components/week4/Week4Assignment";
+import FileIntegrityCheck from "./components/week4/FileIntegrityCheck";
+import UrlShortener from "./components/week4/UrlShortener";
 
 const App = () => {
   return (
@@ -38,6 +41,11 @@ const App = () => {
             <li>
               <Link to="/week3-assignments" className="hover:text-gray-300">
                 Week 3 Assignments
+              </Link>
+            </li>
+            <li>
+              <Link to="/week4-assignments" className="hover:text-gray-300">
+                Week 4 Assignments
               </Link>
             </li>
           </ul>
@@ -81,6 +89,17 @@ const App = () => {
             <Route path="/week3-assignments" element={<Week3Assignment />} />
             <Route path="/week3-assignments/ai-chat" element={<AiChat />} />
             <Route path="/week3-assignments/download" element={<Download />} />
+
+            {/* week4 */}
+            <Route path="/week4-assignments" element={<Week4Assignment />} />
+            <Route
+              path="/week4-assignments/file-integrity"
+              element={<FileIntegrityCheck />}
+            />
+            <Route
+              path="/week4-assignments/url-shortener"
+              element={<UrlShortener />}
+            />
           </Routes>
         </div>
       </div>

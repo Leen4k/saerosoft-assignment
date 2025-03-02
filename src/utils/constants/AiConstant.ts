@@ -1,4 +1,4 @@
-export const AI_RESPONSES = [
+export const AiResponses = [
   "Hi! How can I help you today?",
   "I'm doing great! How about you?",
   "That's interesting! Tell me more.",

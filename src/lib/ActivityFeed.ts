@@ -1,28 +1,30 @@
-import { DoublyLinkedList } from "../utils/linklist/LinkList";
+import { DoublyLinkedList } from "../utils/collections/collection";
 
 export class ActivityFeed {
   private list = new DoublyLinkedList<string>();
 
   addActivity(activity: string): void {
-    this.list.addToHead(activity);
+    this.list.push(activity);
   }
 
   deleteActivity(index: number): void {
-    if (index >= this.list.getSize()) return;
-    let current = this.list.head;
-    for (let i = 0; i < index && current; i++) {
-      current = current.next;
+    if (index >= this.list.size()) return;
+
+    const activities = this.list.getAllItems();
+    const newActivities: string[] = activities.filter((_, i) => i !== index);
+
+    // Clear and rebuild the list
+    while (!this.list.isEmpty()) {
+      this.list.pop();
     }
-    if (current) this.list.removeNode(current);
+
+    // Add activities back in reverse order to maintain the same order
+    for (let i = newActivities.length - 1; i >= 0; i--) {
+      this.list.push(newActivities[i]);
+    }
   }
 
   showActivities(): string[] {
-    const activities: string[] = [];
-    let current = this.list.head;
-    while (current) {
-      activities.push(current.value);
-      current = current.next;
-    }
-    return activities;
+    return this.list.getAllItems();
   }
 }
