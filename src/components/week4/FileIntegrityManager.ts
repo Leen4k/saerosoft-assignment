@@ -7,6 +7,10 @@ class FileIntegrityManager {
     this.fileHashes = new IntegrityMapCollection();
   }
 
+  calculateHash(fileContent: string): string {
+    return this.generateFileHash(fileContent);
+  }
+
   generateFileHash(fileContent: string): string {
     return this.fileHashes.generateHash(fileContent);
   }

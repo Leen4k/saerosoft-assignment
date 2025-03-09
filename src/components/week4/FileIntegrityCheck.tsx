@@ -4,36 +4,36 @@ import FileIntegrityManager from "./FileIntegrityManager";
 const FileIntegrityCheck: React.FC = () => {
   const [fileName, setFileName] = useState<string>("");
   const [fileContent, setFileContent] = useState<string>("");
+  const [hashValue, setHashValue] = useState<string>("");
   const [verificationResult, setVerificationResult] = useState<string>("");
-  const [storedHash, setStoredHash] = useState<string>("");
+  const [calculatedHash, setCalculatedHash] = useState<string>("");
 
   const fileIntegrityManager = useMemo(() => new FileIntegrityManager(), []);
 
-  const handleStoreHash = useCallback(
+  const handleCalculateHash = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
-      if (fileName && fileContent) {
-        fileIntegrityManager.storeFileHash(fileName, fileContent);
-        const hash = fileIntegrityManager.getStoredHash(fileName);
-        setStoredHash(hash || "");
-        setVerificationResult("Hash stored");
+      if (fileContent) {
+        const hash = fileIntegrityManager.calculateHash(fileContent);
+        setCalculatedHash(hash);
       }
     },
-    [fileName, fileContent, fileIntegrityManager]
+    [fileContent, fileIntegrityManager]
   );
 
   const handleVerifyIntegrity = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
-      if (fileName && fileContent) {
-        const result = fileIntegrityManager.verifyFileIntegrity(
-          fileName,
-          fileContent
+      if (fileName && fileContent && hashValue) {
+        const calculatedHash = fileIntegrityManager.calculateHash(fileContent);
+        setCalculatedHash(calculatedHash);
+        const isIntact = calculatedHash === hashValue;
+        setVerificationResult(
+          isIntact ? "File is intact" : "File has been modified"
         );
-        setVerificationResult(result);
       }
     },
-    [fileName, fileContent, fileIntegrityManager]
+    [fileName, fileContent, hashValue, fileIntegrityManager]
   );
 
   return (
@@ -77,13 +77,42 @@ const FileIntegrityCheck: React.FC = () => {
             />
           </div>
 
-          <div className="space-x-4">
+          <div className="flex space-x-4">
             <button
-              onClick={handleStoreHash}
+              onClick={handleCalculateHash}
               className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+              type="button"
             >
-              Store Hash
+              Calculate Hash
             </button>
+          </div>
+
+          {calculatedHash && (
+            <div className="p-4 bg-gray-100 rounded">
+              <p className="text-sm font-medium">Calculated Hash:</p>
+              <p className="font-mono text-sm break-all">{calculatedHash}</p>
+            </div>
+          )}
+
+          <div>
+            <label
+              htmlFor="hashValue"
+              className="block text-sm font-medium mb-1"
+            >
+              Hash Value to Verify Against
+            </label>
+            <input
+              id="hashValue"
+              type="text"
+              value={hashValue}
+              onChange={(e) => setHashValue(e.target.value)}
+              className="w-full p-2 border rounded"
+              placeholder="Enter hash value to verify against"
+              required
+            />
+          </div>
+
+          <div>
             <button
               onClick={handleVerifyIntegrity}
               className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
@@ -98,17 +127,10 @@ const FileIntegrityCheck: React.FC = () => {
             className={`p-4 rounded ${
               verificationResult === "File is intact"
                 ? "bg-green-100"
-                : verificationResult === "File has been modified"
-                ? "bg-red-100"
-                : "bg-blue-100"
+                : "bg-red-100"
             }`}
           >
             <p className="font-medium">{verificationResult}</p>
-            {storedHash && (
-              <p className="mt-2 font-mono text-sm">
-                Stored Hash: {storedHash}
-              </p>
-            )}
           </div>
         )}
       </div>
