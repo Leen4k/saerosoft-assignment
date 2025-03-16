@@ -16,6 +16,9 @@ import Download from "./components/week3/Downloadqueue";
 import Week4Assignment from "./components/week4/Week4Assignment";
 import FileIntegrityCheck from "./components/week4/FileIntegrityCheck";
 import UrlShortener from "./components/week4/UrlShortener";
+import FileTree from "./components/week6/FileTree";
+import ReactDomTree from "./components/week6/ReactDomTree";
+import Week6Assignment from "./components/week6/Week6Assignment";
 
 const App = () => {
   return (
@@ -46,6 +49,11 @@ const App = () => {
             <li>
               <Link to="/week4-assignments" className="hover:text-gray-300">
                 Week 4 Assignments
+              </Link>
+            </li>
+            <li>
+              <Link to="/week6-assignments" className="hover:text-gray-300">
+                Week 6 Assignments
               </Link>
             </li>
           </ul>
@@ -99,6 +107,17 @@ const App = () => {
             <Route
               path="/week4-assignments/url-shortener"
               element={<UrlShortener />}
+            />
+            {/* week 5 */}
+            {/* week 6 */}
+            <Route path="/week6-assignments" element={<Week6Assignment />} />
+            <Route
+              path="/week6-assignments/file-system-directory"
+              element={<FileTree />}
+            />
+            <Route
+              path="/week6-assignments/react-dom-tree"
+              element={<ReactDomTree />}
             />
           </Routes>
         </div>
