@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Tree, findNode } from "../../utils/collections/TreeUtils";
+import { Tree, findNode } from "../../utils/collections/tree";
 
 interface DomData {
   id: string;
@@ -19,15 +19,14 @@ interface DomElement {
 
 function buildDomTree(rootDivRef: React.RefObject<HTMLDivElement>): DomTree {
   if (!rootDivRef.current) {
-    throw new Error("Root div reference is not available");
+    throw new Error("There is no Root div reference");
   }
 
   const buildElement = (
     node: HTMLElement,
     parent: DomElement | null
   ): DomElement => {
-    const id =
-      node.id || `generated-${Math.random().toString(36).substring(2, 9)}`;
+    const id = node.id || `id-${Math.random().toString(36).substring(2, 9)}`;
 
     const element: DomElement = {
       id,
@@ -180,7 +179,7 @@ const ReactDomTree: React.FC = () => {
       }
 
       const newElement: DomElement = {
-        id: newId || `generated-${Math.random().toString(36).substring(2, 9)}`,
+        id: newId || `random-id-${Math.random().toString(36).substring(2, 9)}`,
         tagName: newTagName,
         parent: parentElement,
         children: [],

@@ -1,4 +1,3 @@
-import React from "react";
 import AssignmentList from "../AssignmentList";
 
 const Week6Assignment = () => {
