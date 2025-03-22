@@ -1,119 +1,144 @@
-import { TreeNode } from "../../types";
-
-export interface Tree<T> {
-  root: TreeNode<T>;
+export interface TreeNodeData {
+  id: string;
 }
 
-export function findNode<T, K>(
-  tree: Tree<T>,
-  key: K,
-  keyExtractor: (node: TreeNode<T>) => K
-): TreeNode<T> | null {
-  const queue: TreeNode<T>[] = [tree.root];
+export class TreeNode<T> {
+  id: string;
+  data: T;
+  parent: TreeNode<T> | null;
+  children: TreeNode<T>[];
 
-  while (queue.length > 0) {
-    const current = queue.shift()!;
+  constructor(
+    id: string,
+    data: T,
+    parent: TreeNode<T> | null = null,
+    children: TreeNode<T>[] = []
+  ) {
+    this.id = id;
+    this.data = data;
+    this.parent = parent;
+    this.children = children;
+  }
+}
 
-    if (keyExtractor(current) === key) {
-      return current;
+export class Tree<T> {
+  root: TreeNode<T>;
+
+  constructor(root: TreeNode<T>) {
+    this.root = root;
+  }
+
+  static createNode<T>(
+    id: string,
+    data: T,
+    parent: TreeNode<T> | null = null,
+    children: TreeNode<T>[] = []
+  ): TreeNode<T> {
+    return new TreeNode<T>(id, data, parent, children);
+  }
+
+  findNodeById(id: string): TreeNode<T> | null {
+    const queue: TreeNode<T>[] = [this.root];
+
+    while (queue.length > 0) {
+      const current = queue.shift()!;
+      if (current.id === id) return current;
+      queue.push(...current.children);
     }
 
-    queue.push(...current.children);
-  }
-
-  return null;
-}
-
-export function addNode<T>(parent: TreeNode<T>, data: T): TreeNode<T> {
-  const newNode: TreeNode<T> = {
-    data,
-    parent,
-    children: [],
-  };
-
-  parent.children.push(newNode);
-  return newNode;
-}
-
-export function removeNode<T, K>(
-  tree: Tree<T>,
-  key: K,
-  keyExtractor: (node: TreeNode<T>) => K
-): boolean {
-  const nodeToRemove = findNode(tree, key, keyExtractor);
-
-  if (!nodeToRemove || nodeToRemove === tree.root || !nodeToRemove.parent) {
-    return false;
-  }
-
-  const parent = nodeToRemove.parent;
-  const index = parent.children.findIndex(
-    (child) => keyExtractor(child) === key
-  );
-
-  if (index !== -1) {
-    parent.children.splice(index, 1);
-    return true;
-  }
-
-  return false;
-}
-
-export function getSiblings<T, K>(
-  tree: Tree<T>,
-  key: K,
-  keyExtractor: (node: TreeNode<T>) => K
-): TreeNode<T>[] {
-  const node = findNode(tree, key, keyExtractor);
-
-  if (!node || !node.parent) {
-    return [];
-  }
-
-  return node.parent.children.filter((child) => keyExtractor(child) !== key);
-}
-
-export function getSubtree<T, K>(
-  tree: Tree<T>,
-  key: K,
-  keyExtractor: (node: TreeNode<T>) => K
-): Tree<T> | null {
-  const node = findNode(tree, key, keyExtractor);
-
-  if (!node) {
     return null;
   }
 
-  return { root: node };
-}
+  deleteNodeById(id: string): boolean {
+    if (this.root.id === id) {
+      console.error("Cannot delete the root node");
+      return false;
+    }
 
-export function traverseDepthFirst<T>(
-  node: TreeNode<T>,
-  callback: (node: TreeNode<T>, depth: number) => void,
-  depth: number = 0
-): void {
-  callback(node, depth);
+    const nodeToDelete = this.findNodeById(id);
+    if (!nodeToDelete || !nodeToDelete.parent) {
+      console.error(`Node with ID ${id} not found or has no parent`);
+      return false;
+    }
 
-  for (const child of node.children) {
-    traverseDepthFirst(child, callback, depth + 1);
+    const parent = nodeToDelete.parent;
+    const index = parent.children.findIndex((child) => child.id === id);
+    if (index !== -1) {
+      parent.children.splice(index, 1);
+      return true;
+    }
+
+    return false;
   }
-}
 
-export function traverseBreadthFirst<T>(
-  tree: Tree<T>,
-  callback: (node: TreeNode<T>, depth: number) => void
-): void {
-  const queue: Array<{ node: TreeNode<T>; depth: number }> = [
-    { node: tree.root, depth: 0 },
-  ];
+  insertNode(parentId: string, newNode: TreeNode<T>): boolean {
+    if (!newNode.parent) {
+      console.error("New node must have a parent reference");
+      return false;
+    }
 
-  while (queue.length > 0) {
-    const { node, depth } = queue.shift()!;
+    const parentNode = this.findNodeById(parentId);
+    if (!parentNode) {
+      console.error(`Parent node with ID ${parentId} not found`);
+      return false;
+    }
 
-    callback(node, depth);
+    parentNode.children.push(newNode);
+    return true;
+  }
 
-    for (const child of node.children) {
-      queue.push({ node: child, depth: depth + 1 });
+  traverseDepthFirst(
+    callback: (node: TreeNode<T>, depth: number) => void,
+    startNode: TreeNode<T> = this.root,
+    depth: number = 0
+  ): void {
+    callback(startNode, depth);
+
+    for (const child of startNode.children) {
+      this.traverseDepthFirst(callback, child, depth + 1);
     }
   }
+
+  traverseBreadthFirst(
+    callback: (node: TreeNode<T>, depth: number) => void
+  ): void {
+    const queue: Array<{ node: TreeNode<T>; depth: number }> = [
+      { node: this.root, depth: 0 },
+    ];
+
+    while (queue.length > 0) {
+      const { node, depth } = queue.shift()!;
+
+      callback(node, depth);
+
+      for (const child of node.children) {
+        queue.push({ node: child, depth: depth + 1 });
+      }
+    }
+  }
+}
+
+export function createTreeNode<T>(
+  id: string,
+  data: T,
+  parent: TreeNode<T> | null = null,
+  children: TreeNode<T>[] = []
+): TreeNode<T> {
+  return Tree.createNode(id, data, parent, children);
+}
+
+export function findNodeById<T>(tree: Tree<T>, id: string): TreeNode<T> | null {
+  return tree.findNodeById(id);
+}
+
+export function deleteNodeById<T>(tree: Tree<T>, id: string): boolean {
+  return tree.deleteNodeById(id);
+}
+
+export function insertNode<T>(
+  tree: Tree<T>,
+  parentId: string,
+  newNode: TreeNode<T>
+): boolean {
+  return tree.insertNode(parentId, newNode);
 }

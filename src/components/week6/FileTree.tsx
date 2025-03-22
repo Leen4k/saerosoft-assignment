@@ -1,16 +1,20 @@
 import React, { useEffect, useState } from "react";
 import { FcFile, FcFolder, FcOpenedFolder } from "react-icons/fc";
+import {
+  Tree,
+  TreeNode,
+  createTreeNode,
+  deleteNodeById,
+  findNodeById,
+  insertNode,
+} from "../../utils/collections/tree";
+import { TreeView } from "../common/TreeView";
+import { TreeEditor } from "../common/TreeEditor";
 
-interface DirectoryTree {
-  root: FileSystemEntry;
-}
-
-interface FileSystemEntry {
-  path: string;
+interface FileData {
   name: string;
   isDirectory: boolean;
-  parent: FileSystemEntry | null;
-  children: FileSystemEntry[];
+  path: string;
 }
 
 const mockFileSystem: Record<string, boolean> = {
@@ -30,22 +34,26 @@ function normalizePath(path: string): string {
   return path.endsWith("/") ? path.slice(0, -1) : path;
 }
 
-function buildFileSystemTree(rootPath: string): DirectoryTree {
+function buildFileSystemTree(rootPath: string): Tree<FileData> {
   const normalizedRoot = normalizePath(rootPath);
   const rootName =
     normalizedRoot === "/"
       ? "root"
       : normalizedRoot.split("/").filter(Boolean).pop() || "";
 
-  const rootEntry: FileSystemEntry = {
-    path: normalizedRoot,
-    name: rootName,
-    isDirectory: true,
-    parent: null,
-    children: [],
-  };
+  const rootNode = createTreeNode<FileData>(
+    normalizedRoot,
+    {
+      path: normalizedRoot,
+      name: rootName,
+      isDirectory: true,
+    },
+    null,
+    []
+  );
 
-  const tree: DirectoryTree = { root: rootEntry };
+  const tree = new Tree<FileData>(rootNode);
+
   const paths = Object.keys(mockFileSystem)
     .filter((path) => {
       const normalizedPath = normalizePath(path);
@@ -61,7 +69,7 @@ function buildFileSystemTree(rootPath: string): DirectoryTree {
       tree,
       normalizePath(path),
       mockFileSystem[path],
-      rootEntry,
+      rootNode,
       normalizedRoot
     );
   }
@@ -70,10 +78,10 @@ function buildFileSystemTree(rootPath: string): DirectoryTree {
 }
 
 function insertPathIntoTree(
-  tree: DirectoryTree,
+  tree: Tree<FileData>,
   fullPath: string,
   isDirectory: boolean,
-  rootEntry: FileSystemEntry,
+  rootNode: TreeNode<FileData>,
   rootPath: string
 ): void {
   let relativePath = fullPath;
@@ -86,31 +94,40 @@ function insertPathIntoTree(
 
   const pathParts = relativePath.split("/").filter(Boolean);
   let currentPath = rootPath;
-  let currentNode = rootEntry;
+  let currentNode = rootNode;
 
   for (let i = 0; i < pathParts.length; i++) {
     const part = pathParts[i];
     currentPath = normalizePath(`${currentPath}/${part}`);
 
     if (i === pathParts.length - 1) {
-      currentNode.children.push({
-        path: fullPath,
-        name: part,
-        isDirectory,
-        parent: currentNode,
-        children: [],
-      });
+      const newNode = createTreeNode<FileData>(
+        fullPath,
+        {
+          path: fullPath,
+          name: part,
+          isDirectory,
+        },
+        currentNode,
+        []
+      );
+      currentNode.children.push(newNode);
     } else {
-      let childNode = currentNode.children.find((child) => child.name === part);
+      let childNode = currentNode.children.find(
+        (child) => child.data.name === part
+      );
 
       if (!childNode) {
-        childNode = {
-          path: currentPath,
-          name: part,
-          isDirectory: true,
-          parent: currentNode,
-          children: [],
-        };
+        childNode = createTreeNode<FileData>(
+          currentPath,
+          {
+            path: currentPath,
+            name: part,
+            isDirectory: true,
+          },
+          currentNode,
+          []
+        );
         currentNode.children.push(childNode);
       }
 
@@ -119,106 +136,8 @@ function insertPathIntoTree(
   }
 }
 
-function findEntryByPath(
-  tree: DirectoryTree,
-  targetPath: string
-): FileSystemEntry | null {
-  const normalizedPath = normalizePath(targetPath);
-  const queue = [tree.root];
-
-  while (queue.length > 0) {
-    const current = queue.shift()!;
-    if (normalizePath(current.path) === normalizedPath) return current;
-    if (current.isDirectory) queue.push(...current.children);
-  }
-
-  return null;
-}
-
-function insertEntry(
-  tree: DirectoryTree,
-  parentPath: string,
-  entryName: string,
-  isDirectory: boolean
-): DirectoryTree {
-  const parentEntry = findEntryByPath(tree, parentPath);
-
-  if (!parentEntry || !parentEntry.isDirectory) {
-    console.error(
-      `Cannot insert into ${parentPath}: parent not found or not a directory`
-    );
-    return tree;
-  }
-
-  const newPath = normalizePath(`${parentPath}/${entryName}`);
-
-  if (parentEntry.children.some((child) => child.name === entryName)) {
-    console.error(`Entry ${entryName} already exists in ${parentPath}`);
-    return tree;
-  }
-
-  try {
-    mockFileSystem[newPath] = isDirectory;
-
-    parentEntry.children.push({
-      path: newPath,
-      name: entryName,
-      isDirectory,
-      parent: parentEntry,
-      children: [],
-    });
-
-    return { ...tree };
-  } catch (error) {
-    console.error(`Error inserting entry ${newPath}:`, error);
-    return tree;
-  }
-}
-
-function deleteEntryByPath(
-  tree: DirectoryTree,
-  entryPath: string
-): DirectoryTree {
-  const normalizedPath = normalizePath(entryPath);
-  const entry = findEntryByPath(tree, normalizedPath);
-
-  if (!entry || entry === tree.root || !entry.parent) {
-    console.error(
-      `Cannot delete ${normalizedPath}: entry not found, is root, or has no parent`
-    );
-    return tree;
-  }
-
-  try {
-    if (entry.isDirectory) {
-      Object.keys(mockFileSystem).forEach((path) => {
-        const normalizedCurrentPath = normalizePath(path);
-        if (
-          normalizedCurrentPath === normalizedPath ||
-          normalizedCurrentPath.startsWith(`${normalizedPath}/`)
-        ) {
-          delete mockFileSystem[path];
-        }
-      });
-    } else {
-      delete mockFileSystem[entryPath];
-    }
-
-    const parent = entry.parent;
-    const index = parent.children.findIndex(
-      (child) => normalizePath(child.path) === normalizedPath
-    );
-    if (index !== -1) parent.children.splice(index, 1);
-
-    return { ...tree };
-  } catch (error) {
-    console.error(`Error deleting entry ${normalizedPath}:`, error);
-    return tree;
-  }
-}
-
 const FileTree: React.FC = () => {
-  const [tree, setTree] = useState<DirectoryTree | null>(null);
+  const [tree, setTree] = useState<Tree<FileData> | null>(null);
   const [message, setMessage] = useState<string>("");
   const [rootPath, setRootPath] = useState<string>("/");
   const [newEntryName, setNewEntryName] = useState<string>("");
@@ -251,7 +170,31 @@ const FileTree: React.FC = () => {
     }
 
     try {
-      setTree(insertEntry(tree, selectedPath, newEntryName, isDirectory));
+      const newPath = normalizePath(`${selectedPath}/${newEntryName}`);
+
+      if (findNodeById(tree, newPath)) {
+        setMessage(`Entry ${newEntryName} already exists in ${selectedPath}`);
+        return;
+      }
+
+      const selectedNode = findNodeById(tree, selectedPath);
+      if (!selectedNode) return;
+
+      mockFileSystem[newPath] = isDirectory;
+
+      const newNode = createTreeNode<FileData>(
+        newPath,
+        {
+          path: newPath,
+          name: newEntryName,
+          isDirectory,
+        },
+        selectedNode,
+        []
+      );
+
+      insertNode(tree, selectedPath, newNode);
+      setTree(new Tree<FileData>(tree.root));
       setNewEntryName("");
       setMessage(
         `${
@@ -273,7 +216,25 @@ const FileTree: React.FC = () => {
     if (!tree || selectedPath === "/") return;
 
     try {
-      setTree(deleteEntryByPath(tree, selectedPath));
+      const entry = findNodeById(tree, selectedPath);
+      if (!entry) return;
+
+      if (entry.data.isDirectory) {
+        Object.keys(mockFileSystem).forEach((path) => {
+          const normalizedCurrentPath = normalizePath(path);
+          if (
+            normalizedCurrentPath === selectedPath ||
+            normalizedCurrentPath.startsWith(`${selectedPath}/`)
+          ) {
+            delete mockFileSystem[path];
+          }
+        });
+      } else {
+        delete mockFileSystem[selectedPath];
+      }
+
+      deleteNodeById(tree, selectedPath);
+      setTree(new Tree<FileData>(tree.root));
       setSelectedPath("/");
       setSelectedIsDirectory(true);
       setMessage(`Entry at ${selectedPath} deleted`);
@@ -294,66 +255,39 @@ const FileTree: React.FC = () => {
     });
   };
 
-  const handleSelectPath = (path: string, isDirectory: boolean) => {
+  const handleSelectPath = (path: string) => {
+    if (!tree) return;
+    const node = findNodeById(tree, path);
+    if (!node) return;
+
     setSelectedPath(path);
-    setSelectedIsDirectory(isDirectory);
+    setSelectedIsDirectory(node.data.isDirectory);
   };
 
-  const TreeNode: React.FC<{
-    entry: FileSystemEntry;
-    indent?: number;
-    onSelect: (path: string, isDirectory: boolean) => void;
-  }> = ({ entry, indent = 0, onSelect }) => {
-    const isSelected = selectedPath === entry.path;
-    const isExpanded = expandedPaths.has(entry.path);
-
-    const handleFolderClick = (e: React.MouseEvent) => {
-      e.stopPropagation();
-      onSelect(entry.path, entry.isDirectory);
-    };
-
-    const handleFolderIconClick = (e: React.MouseEvent) => {
-      e.stopPropagation();
-      if (entry.isDirectory) {
-        toggleExpanded(entry.path);
-      }
-    };
+  const renderFileNode = (node: TreeNode<FileData>, isSelected: boolean) => {
+    const isExpanded = expandedPaths.has(node.id);
 
     return (
-      <div>
-        <div
-          className={`flex items-center cursor-pointer ${
-            isSelected ? "bg-blue-100" : ""
-          }`}
-          style={{ paddingLeft: `${indent * 20}px` }}
-          onClick={handleFolderClick}
-          onDoubleClick={() => entry.isDirectory && toggleExpanded(entry.path)}
+      <>
+        <span
+          className="mr-1"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (node.data.isDirectory) toggleExpanded(node.id);
+          }}
         >
-          <span className="mr-1" onClick={handleFolderIconClick}>
-            {entry.isDirectory ? (
-              isExpanded ? (
-                <FcOpenedFolder />
-              ) : (
-                <FcFolder />
-              )
+          {node.data.isDirectory ? (
+            isExpanded ? (
+              <FcOpenedFolder />
             ) : (
-              <FcFile />
-            )}
-          </span>
-          <span>{entry.name}</span>
-        </div>
-
-        {isExpanded &&
-          entry.isDirectory &&
-          entry.children.map((child, index) => (
-            <TreeNode
-              key={index}
-              entry={child}
-              indent={indent + 1}
-              onSelect={onSelect}
-            />
-          ))}
-      </div>
+              <FcFolder />
+            )
+          ) : (
+            <FcFile />
+          )}
+        </span>
+        <span>{node.data.name}</span>
+      </>
     );
   };
 
@@ -390,81 +324,65 @@ const FileTree: React.FC = () => {
       <div className="grid grid-cols-2 gap-4">
         <div>
           <div className="mb-2 font-semibold">Directory Structure</div>
-          <div className="bg-white p-4 border rounded h-96 overflow-auto">
-            {tree ? (
-              <TreeNode entry={tree.root} onSelect={handleSelectPath} />
-            ) : (
-              <div>Loading tree...</div>
-            )}
-          </div>
+          {tree && (
+            <TreeView
+              tree={tree}
+              selectedId={selectedPath}
+              onSelect={handleSelectPath}
+              renderNode={renderFileNode}
+              expandedIds={expandedPaths}
+              onToggleExpand={(id) => {
+                const node = findNodeById(tree, id);
+                if (node && node.data.isDirectory) toggleExpanded(id);
+              }}
+            />
+          )}
         </div>
 
         <div>
-          <div className="mb-2 font-semibold">Add/Edit file</div>
-          <div className="bg-white p-4 rounded">
-            <div className="mb-4">
-              <div className="text-sm text-gray-600 mb-1">
-                Selected path: {selectedPath}{" "}
-                {!selectedIsDirectory && " (File)"}
-              </div>
+          <TreeEditor
+            selectedId={selectedPath}
+            selectedLabel={`${selectedPath}${
+              !selectedIsDirectory ? " (File)" : ""
+            }`}
+            canDelete={selectedPath !== "/"}
+            canAdd={selectedIsDirectory}
+            onAdd={handleAddEntry}
+            onDelete={handleDeleteEntry}
+            message={message}
+          >
+            <input
+              type="text"
+              className="border p-2 mr-2 w-full mb-2"
+              value={newEntryName}
+              onChange={(e) => setNewEntryName(e.target.value)}
+              placeholder="New file/directory name"
+              disabled={!selectedIsDirectory}
+            />
 
-              <div className="mb-4">
+            <div className="flex items-center mb-2">
+              <label className="inline-flex items-center mr-4">
                 <input
-                  type="text"
-                  className="border p-2 mr-2 w-full mb-2"
-                  value={newEntryName}
-                  onChange={(e) => setNewEntryName(e.target.value)}
-                  placeholder="New file/directory name"
+                  type="radio"
+                  checked={isDirectory}
+                  onChange={() => setIsDirectory(true)}
+                  className="mr-1"
                   disabled={!selectedIsDirectory}
                 />
-
-                <div className="flex items-center mb-2">
-                  <label className="inline-flex items-center mr-4">
-                    <input
-                      type="radio"
-                      checked={isDirectory}
-                      onChange={() => setIsDirectory(true)}
-                      className="mr-1"
-                      disabled={!selectedIsDirectory}
-                    />
-                    Directory
-                  </label>
-                  <label className="inline-flex items-center">
-                    <input
-                      type="radio"
-                      checked={!isDirectory}
-                      onChange={() => setIsDirectory(false)}
-                      className="mr-1"
-                      disabled={!selectedIsDirectory}
-                    />
-                    File
-                  </label>
-                </div>
-
-                <button
-                  className={`${
-                    selectedIsDirectory ? "bg-green-500" : "bg-gray-400"
-                  } text-white px-4 py-2 rounded w-full`}
-                  onClick={handleAddEntry}
-                  disabled={!selectedIsDirectory || !newEntryName}
-                >
-                  Create in selected directory
-                </button>
-              </div>
-
-              <button
-                className="bg-red-500 text-white px-4 py-2 rounded w-full"
-                onClick={handleDeleteEntry}
-                disabled={selectedPath === "/"}
-              >
-                Delete selected entry
-              </button>
+                Directory
+              </label>
+              <label className="inline-flex items-center">
+                <input
+                  type="radio"
+                  checked={!isDirectory}
+                  onChange={() => setIsDirectory(false)}
+                  className="mr-1"
+                  disabled={!selectedIsDirectory}
+                />
+                File
+              </label>
             </div>
-          </div>
-
-          <div className="mt-4 text-sm text-gray-600 p-2 border bg-gray-50">
-            {message}
-          </div>
+          </TreeEditor>
         </div>
       </div>
     </div>

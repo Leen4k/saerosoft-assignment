@@ -1,39 +1,38 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Tree, findNode } from "../../utils/collections/tree";
+import {
+  Tree,
+  TreeNode,
+  createTreeNode,
+  deleteNodeById,
+  findNodeById,
+  insertNode,
+} from "../../utils/collections/tree";
+import { TreeView } from "../common/TreeView";
+import { TreeEditor } from "../common/TreeEditor";
 
 interface DomData {
-  id: string;
   tagName: string;
 }
 
-interface DomTree {
-  root: DomElement;
-}
-
-interface DomElement {
-  id: string;
-  tagName: string;
-  parent: DomElement | null;
-  children: DomElement[];
-}
-
-function buildDomTree(rootDivRef: React.RefObject<HTMLDivElement>): DomTree {
+function buildDomTree(
+  rootDivRef: React.RefObject<HTMLDivElement>
+): Tree<DomData> {
   if (!rootDivRef.current) {
     throw new Error("There is no Root div reference");
   }
 
   const buildElement = (
     node: HTMLElement,
-    parent: DomElement | null
-  ): DomElement => {
+    parent: TreeNode<DomData> | null
+  ): TreeNode<DomData> => {
     const id = node.id || `id-${Math.random().toString(36).substring(2, 9)}`;
 
-    const element: DomElement = {
+    const element = createTreeNode<DomData>(
       id,
-      tagName: node.tagName.toLowerCase(),
+      { tagName: node.tagName.toLowerCase() },
       parent,
-      children: [],
-    };
+      []
+    );
 
     Array.from(node.children).forEach((childNode) => {
       if (childNode instanceof HTMLElement) {
@@ -46,70 +45,11 @@ function buildDomTree(rootDivRef: React.RefObject<HTMLDivElement>): DomTree {
   };
 
   const rootElement = buildElement(rootDivRef.current, null);
-  return { root: rootElement };
+  return new Tree<DomData>(rootElement);
 }
 
-function findElementById(tree: DomTree, id: string): DomElement | null {
-  return findNode(
-    tree as unknown as Tree<DomData>,
-    id,
-    (node) => (node as unknown as DomElement).id
-  ) as unknown as DomElement | null;
-}
-
-function insertElement(tree: DomTree, element: DomElement): void {
-  if (!element.parent) {
-    console.error("Cannot add a new root element");
-    return;
-  }
-  const parentElement = findElementById(tree, element.parent.id);
-  if (!parentElement) {
-    console.error(`Parent element with ID ${element.parent.id} not found`);
-    return;
-  }
-  parentElement.children.push(element);
-  const parentNode = document.getElementById(parentElement.id);
-  if (!parentNode) {
-    console.error(`Parent DOM node with ID ${parentElement.id} not found`);
-    return;
-  }
-
-  const newNode = document.createElement(element.tagName);
-  newNode.id = element.id;
-  parentNode.appendChild(newNode);
-}
-
-function deleteElementById(tree: DomTree, id: string): void {
-  if (tree.root.id === id) {
-    console.error("Cannot delete the root element");
-    return;
-  }
-
-  const elementToDelete = findElementById(tree, id);
-  if (!elementToDelete) {
-    console.error(`Element with ID ${id} not found`);
-    return;
-  }
-
-  const parent = elementToDelete.parent;
-  if (!parent) {
-    console.error(`Element with ID ${id} has no parent`);
-    return;
-  }
-
-  const index = parent.children.findIndex((child) => child.id === id);
-  if (index !== -1) {
-    parent.children.splice(index, 1);
-  }
-
-  const nodeToDelete = document.getElementById(id);
-  if (nodeToDelete && nodeToDelete.parentNode) {
-    nodeToDelete.parentNode.removeChild(nodeToDelete);
-  }
-}
-
-const DomTreeRenderer: React.FC<{ tree: DomTree }> = ({ tree }) => {
-  const renderElement = (element: DomElement, depth: number = 0) => {
+const DomTreeRenderer: React.FC<{ tree: Tree<DomData> }> = ({ tree }) => {
+  const renderElement = (element: TreeNode<DomData>, depth: number = 0) => {
     const indent = depth * 20;
 
     return (
@@ -119,7 +59,7 @@ const DomTreeRenderer: React.FC<{ tree: DomTree }> = ({ tree }) => {
           style={{ paddingLeft: `${indent}px` }}
         >
           <span className="px-2 py-1 text-blue-600">
-            &lt;{element.tagName}&gt;
+            &lt;{element.data.tagName}&gt;
           </span>
           <span className="text-gray-500 text-sm ml-2">id: {element.id}</span>
         </div>
@@ -129,7 +69,7 @@ const DomTreeRenderer: React.FC<{ tree: DomTree }> = ({ tree }) => {
           style={{ paddingLeft: `${indent}px` }}
         >
           <span className="px-2 py-1 text-blue-600">
-            &lt;/{element.tagName}&gt;
+            &lt;/{element.data.tagName}&gt;
           </span>
         </div>
       </div>
@@ -144,7 +84,7 @@ const DomTreeRenderer: React.FC<{ tree: DomTree }> = ({ tree }) => {
 };
 
 const ReactDomTree: React.FC = () => {
-  const [tree, setTree] = useState<DomTree | null>(null);
+  const [tree, setTree] = useState<Tree<DomData> | null>(null);
   const [message, setMessage] = useState<string>("");
   const [newTagName, setNewTagName] = useState<string>("div");
   const [newId, setNewId] = useState<string>("");
@@ -169,28 +109,35 @@ const ReactDomTree: React.FC = () => {
     if (!tree || !newTagName) return;
 
     try {
-      const parentElement = selectedId
-        ? findElementById(tree, selectedId)
-        : tree.root;
-
-      if (!parentElement) {
+      const parentNode = findNodeById(tree, selectedId);
+      if (!parentNode) {
         setMessage(`Parent element with ID ${selectedId} not found`);
         return;
       }
 
-      const newElement: DomElement = {
-        id: newId || `random-id-${Math.random().toString(36).substring(2, 9)}`,
-        tagName: newTagName,
-        parent: parentElement,
-        children: [],
-      };
+      const id =
+        newId || `random-id-${Math.random().toString(36).substring(2, 9)}`;
 
-      insertElement(tree, newElement);
+      const newElement = createTreeNode<DomData>(
+        id,
+        { tagName: newTagName },
+        parentNode,
+        []
+      );
 
-      setTree({ ...tree });
+      insertNode(tree, selectedId, newElement);
+
+      const parentDomNode = document.getElementById(parentNode.id);
+      if (parentDomNode) {
+        const newDomNode = document.createElement(newTagName);
+        newDomNode.id = id;
+        parentDomNode.appendChild(newDomNode);
+      }
+
+      setTree(new Tree<DomData>(tree.root));
       setNewId("");
       setMessage(
-        `Element <${newTagName}> created under ${parentElement.tagName}#${parentElement.id}`
+        `Element <${newTagName}> created under ${parentNode.data.tagName}#${parentNode.id}`
       );
     } catch (error) {
       setMessage(`Error creating element: ${error}`);
@@ -201,9 +148,14 @@ const ReactDomTree: React.FC = () => {
     if (!tree || !selectedId || selectedId === tree.root.id) return;
 
     try {
-      deleteElementById(tree, selectedId);
+      const nodeToDelete = document.getElementById(selectedId);
+      if (nodeToDelete && nodeToDelete.parentNode) {
+        nodeToDelete.parentNode.removeChild(nodeToDelete);
+      }
 
-      setTree({ ...tree });
+      deleteNodeById(tree, selectedId);
+
+      setTree(new Tree<DomData>(tree.root));
       setSelectedId(tree.root.id);
       setMessage(`Element with ID ${selectedId} deleted`);
     } catch (error) {
@@ -211,37 +163,22 @@ const ReactDomTree: React.FC = () => {
     }
   };
 
-  const ElementSelector: React.FC<{
-    element: DomElement;
-    depth?: number;
-    onSelect: (id: string) => void;
-  }> = ({ element, depth = 0, onSelect }) => {
-    const isSelected = selectedId === element.id;
-    const indent = depth * 20;
-
+  const renderDomNode = (node: TreeNode<DomData>) => {
     return (
-      <div>
-        <div
-          className={`flex items-center cursor-pointer ${
-            isSelected ? "bg-blue-100" : ""
-          }`}
-          style={{ paddingLeft: `${indent}px` }}
-          onClick={() => onSelect(element.id)}
-        >
-          <span className="text-blue-600">&lt;{element.tagName}&gt;</span>
-          <span className="text-gray-500 text-sm ml-2">id: {element.id}</span>
-        </div>
-
-        {element.children.map((child, index) => (
-          <ElementSelector
-            key={index}
-            element={child}
-            depth={depth + 1}
-            onSelect={onSelect}
-          />
-        ))}
-      </div>
+      <>
+        <span className="text-blue-600">&lt;{node.data.tagName}&gt;</span>
+        <span className="text-gray-500 text-sm ml-2">id: {node.id}</span>
+      </>
     );
+  };
+
+  const getSelectedLabel = () => {
+    if (!tree || !selectedId) return "None";
+
+    const node = findNodeById(tree, selectedId);
+    if (!node) return "None";
+
+    return `${node.data.tagName}#${node.id}`;
   };
 
   return (
@@ -279,70 +216,47 @@ const ReactDomTree: React.FC = () => {
       <div className="grid grid-cols-2 gap-4">
         <div>
           <div className="mb-2 font-semibold">DOM Structure</div>
-          <div className="bg-white p-4 border rounded h-96 overflow-auto">
-            {tree ? (
-              <ElementSelector
-                element={tree.root}
-                onSelect={(id) => setSelectedId(id)}
-              />
-            ) : (
-              <div>Loading DOM tree...</div>
-            )}
-          </div>
+          {tree && (
+            <TreeView
+              tree={tree}
+              selectedId={selectedId}
+              onSelect={setSelectedId}
+              renderNode={renderDomNode}
+            />
+          )}
         </div>
 
         <div>
-          <div className="mb-2 font-semibold">DOM Operations</div>
-          <div className="bg-white p-4 border rounded">
-            <div className="mb-4">
-              <div className="text-sm text-gray-600 mb-1">
-                Selected element: {selectedId ? `${selectedId}` : "None"}
-              </div>
-
-              <div className="mb-4">
-                <div className="grid grid-cols-2 gap-2 mb-2">
-                  <input
-                    type="text"
-                    className="border p-2"
-                    value={newTagName}
-                    onChange={(e) => setNewTagName(e.target.value)}
-                    placeholder="please input ur html tag.. (div, span, etc.)"
-                  />
-                  <input
-                    type="text"
-                    className="border p-2"
-                    value={newId}
-                    onChange={(e) => setNewId(e.target.value)}
-                    placeholder="enter your element id (optional)"
-                  />
-                </div>
-
-                <button
-                  className="bg-green-500 text-white px-4 py-2 rounded w-full mb-2"
-                  onClick={handleAddElement}
-                  disabled={!newTagName}
-                >
-                  Add element to selected parent
-                </button>
-
-                <button
-                  className="bg-red-500 text-white px-4 py-2 rounded w-full"
-                  onClick={handleDeleteElement}
-                  disabled={!selectedId || selectedId === tree?.root.id}
-                >
-                  Delete selected element
-                </button>
-              </div>
+          <TreeEditor
+            selectedId={selectedId}
+            selectedLabel={getSelectedLabel()}
+            canDelete={selectedId !== "" && selectedId !== tree?.root.id}
+            canAdd={selectedId !== ""}
+            onAdd={handleAddElement}
+            onDelete={handleDeleteElement}
+            message={message}
+          >
+            <div className="grid grid-cols-2 gap-2 mb-2">
+              <input
+                type="text"
+                className="border p-2"
+                value={newTagName}
+                onChange={(e) => setNewTagName(e.target.value)}
+                placeholder="Tag (div, span, etc.)"
+              />
+              <input
+                type="text"
+                className="border p-2"
+                value={newId}
+                onChange={(e) => setNewId(e.target.value)}
+                placeholder="Element ID (optional)"
+              />
             </div>
-          </div>
+          </TreeEditor>
 
           <div className="mt-4">
             <div className="mb-2 font-semibold">Rendered DOM Tree</div>
             {tree && <DomTreeRenderer tree={tree} />}
-          </div>
-
-          <div className="mt-4 text-sm text-gray-600 p-2 border bg-gray-50">
-            {message}
           </div>
         </div>
       </div>
