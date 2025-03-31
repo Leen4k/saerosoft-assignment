@@ -19,6 +19,8 @@ import UrlShortener from "./components/week4/UrlShortener";
 import FileTree from "./components/week6/FileTree";
 import ReactDomTree from "./components/week6/ReactDomTree";
 import Week6Assignment from "./components/week6/Week6Assignment";
+import TreeInsertionAndDeletion from "./components/week8/TreeInsertionAndDeletion";
+import Week8Assignment from "./components/week8/Week8Assignment";
 
 const App = () => {
   return (
@@ -54,6 +56,11 @@ const App = () => {
             <li>
               <Link to="/week6-assignments" className="hover:text-gray-300">
                 Week 6 Assignments
+              </Link>
+            </li>
+            <li>
+              <Link to="/week8-assignments" className="hover:text-gray-300">
+                Week 8 Assignments
               </Link>
             </li>
           </ul>
@@ -118,6 +125,13 @@ const App = () => {
             <Route
               path="/week6-assignments/react-dom-tree"
               element={<ReactDomTree />}
+            />
+            {/* week 7 */}
+            {/* week 8 */}
+            <Route path="/week8-assignments" element={<Week8Assignment />} />
+            <Route
+              path="/week8-assignments/tree-insertion-deletion"
+              element={<TreeInsertionAndDeletion />}
             />
           </Routes>
         </div>
