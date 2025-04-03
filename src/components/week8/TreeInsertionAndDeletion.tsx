@@ -11,6 +11,10 @@ interface BTreeNode {
 
 const TreeInsertionAndDeletion = () => {
   function createBTree(minDegree: number): BTree {
+    if (minDegree < 2) {
+      throw new Error("Minimum degree must be at least 2");
+    }
+    
     return {
       root: {
         keys: [],
@@ -33,16 +37,15 @@ const TreeInsertionAndDeletion = () => {
       };
 
       tree.root = newRoot;
-      splitChild(newRoot, 0);
-      insertNonFull(newRoot, key);
+      splitChild(tree, newRoot, 0);
+      insertNonFull(tree, newRoot, key);
     } else {
-      insertNonFull(root, key);
+      insertNonFull(tree, root, key);
     }
   }
 
-  function insertNonFull(node: BTreeNode, key: number): void {
-    const t =
-      node.children.length > 0 ? Math.ceil(node.children.length / 2) : 2;
+  function insertNonFull(tree: BTree, node: BTreeNode, key: number): void {
+    const t = tree.minDegree;
     let i = node.keys.length - 1;
 
     if (node.isLeaf) {
@@ -57,19 +60,18 @@ const TreeInsertionAndDeletion = () => {
       i++;
 
       if (node.children[i].keys.length === 2 * t - 1) {
-        splitChild(node, i);
+        splitChild(tree, node, i);
         if (key > node.keys[i]) {
           i++;
         }
       }
 
-      insertNonFull(node.children[i], key);
+      insertNonFull(tree, node.children[i], key);
     }
   }
 
-  function splitChild(parent: BTreeNode, index: number): void {
-    const t =
-      parent.children.length > 0 ? Math.ceil(parent.children.length / 2) : 2;
+  function splitChild(tree: BTree, parent: BTreeNode, index: number): void {
+    const t = tree.minDegree;
     const child = parent.children[index];
     const newChild: BTreeNode = {
       keys: [],
@@ -92,34 +94,38 @@ const TreeInsertionAndDeletion = () => {
   }
 
   function deleteKey(tree: BTree, key: number): void {
-    const root = tree.root;
+    if (!tree.root || tree.root.keys.length === 0) {
+      return;
+    }
+    
     const t = tree.minDegree;
+    deleteKeyFromNode(tree, tree.root, key);
 
-    deleteKeyFromNode(root, key, t);
-
-    if (root.keys.length === 0 && !root.isLeaf) {
-      tree.root = root.children[0];
+    if (tree.root.keys.length === 0 && !tree.root.isLeaf) {
+      tree.root = tree.root.children[0];
     }
   }
 
-  function deleteKeyFromNode(node: BTreeNode, key: number, t: number): void {
+  function deleteKeyFromNode(tree: BTree, node: BTreeNode, key: number): void {
+    const t = tree.minDegree;
     let index = findKeyIndex(node, key);
 
     if (index < node.keys.length && node.keys[index] === key) {
       if (node.isLeaf) {
         node.keys.splice(index, 1);
       } else {
-        deleteFromInternalNode(node, index, t);
+        deleteFromInternalNode(tree, node, index);
       }
     } else if (!node.isLeaf) {
-      const child = node.children[index];
-
+      const childIndex = index;
+      const child = node.children[childIndex];
+      
       if (child.keys.length < t) {
-        fillChild(node, index, t);
-        index = findKeyIndex(node, key);
+        fillChild(tree, node, childIndex);
+        return deleteKeyFromNode(tree, node, key);
       }
 
-      deleteKeyFromNode(node.children[index], key, t);
+      deleteKeyFromNode(tree, node.children[childIndex], key);
     }
   }
 
@@ -131,95 +137,103 @@ const TreeInsertionAndDeletion = () => {
     return index;
   }
 
-  function deleteFromInternalNode(
-    node: BTreeNode,
-    index: number,
-    t: number
-  ): void {
+  function deleteFromInternalNode(tree: BTree, node: BTreeNode, index: number): void {
+    const t = tree.minDegree;
     const keyToDelete = node.keys[index];
 
     if (node.children[index].keys.length >= t) {
-      const predecessor = getPredecessor(node, index);
+      const predecessor = getPredecessor(node.children[index]);
       node.keys[index] = predecessor;
-      deleteKeyFromNode(node.children[index], predecessor, t);
+      deleteKeyFromNode(tree, node.children[index], predecessor);
     } else if (node.children[index + 1].keys.length >= t) {
-      const successor = getSuccessor(node, index);
+      const successor = getSuccessor(node.children[index + 1]);
       node.keys[index] = successor;
-      deleteKeyFromNode(node.children[index + 1], successor, t);
+      deleteKeyFromNode(tree, node.children[index + 1], successor);
     } else {
-      mergeNodes(node, index, t);
-      deleteKeyFromNode(node.children[index], keyToDelete, t);
+      mergeNodes(tree, node, index);
+      deleteKeyFromNode(tree, node.children[index], keyToDelete);
     }
   }
 
-  function getSuccessor(node: BTreeNode, index: number): number {
-    let current = node.children[index + 1];
+  function getSuccessor(node: BTreeNode): number {
+    let current = node;
     while (!current.isLeaf) {
       current = current.children[0];
     }
     return current.keys[0];
   }
 
-  function getPredecessor(node: BTreeNode, index: number): number {
-    let current = node.children[index];
+  function getPredecessor(node: BTreeNode): number {
+    let current = node;
     while (!current.isLeaf) {
       current = current.children[current.children.length - 1];
     }
     return current.keys[current.keys.length - 1];
   }
 
-  function fillChild(parent: BTreeNode, index: number, t: number): void {
+  function fillChild(tree: BTree, parent: BTreeNode, index: number): void {
+    const t = tree.minDegree;
+    
     if (index > 0 && parent.children[index - 1].keys.length >= t) {
-      borrowFromPrev(parent, index, t);
-    } else if (
-      index < parent.children.length - 1 &&
-      parent.children[index + 1].keys.length >= t
-    ) {
-      borrowFromNext(parent, index, t);
+      borrowFromPrev(parent, index);
+    } else if (index < parent.children.length - 1 && parent.children[index + 1].keys.length >= t) {
+      borrowFromNext(parent, index);
     } else {
       if (index < parent.children.length - 1) {
-        mergeNodes(parent, index, t);
+        mergeNodes(tree, parent, index);
       } else {
-        mergeNodes(parent, index - 1, t);
+        mergeNodes(tree, parent, index - 1);
       }
     }
   }
 
-  function borrowFromPrev(parent: BTreeNode, index: number, t: number): void {
+  function borrowFromPrev(parent: BTreeNode, index: number): void {
     const child = parent.children[index];
     const sibling = parent.children[index - 1];
 
     child.keys.unshift(parent.keys[index - 1]);
-    parent.keys[index - 1] = sibling.keys.pop()!;
-
-    if (!child.isLeaf) {
-      child.children.unshift(sibling.children.pop()!);
+    
+    if (sibling.keys.length > 0) {
+      parent.keys[index - 1] = sibling.keys[sibling.keys.length - 1];
+      sibling.keys.pop();
+      
+      if (!child.isLeaf && sibling.children.length > 0) {
+        child.children.unshift(sibling.children[sibling.children.length - 1]);
+        sibling.children.pop();
+      }
     }
   }
 
-  function borrowFromNext(parent: BTreeNode, index: number, t: number): void {
+  function borrowFromNext(parent: BTreeNode, index: number): void {
     const child = parent.children[index];
     const sibling = parent.children[index + 1];
 
     child.keys.push(parent.keys[index]);
-    parent.keys[index] = sibling.keys.shift()!;
-
-    if (!child.isLeaf) {
-      child.children.push(sibling.children.shift()!);
+    
+    if (sibling.keys.length > 0) {
+      parent.keys[index] = sibling.keys[0];
+      sibling.keys.shift();
+      
+      if (!child.isLeaf && sibling.children.length > 0) {
+        child.children.push(sibling.children[0]);
+        sibling.children.shift();
+      }
     }
   }
 
-  function mergeNodes(parent: BTreeNode, index: number, t: number): void {
+  function mergeNodes(tree: BTree, parent: BTreeNode, index: number): void {
+    const t = tree.minDegree;
     const child = parent.children[index];
     const sibling = parent.children[index + 1];
 
     child.keys.push(parent.keys[index]);
+    
     child.keys.push(...sibling.keys);
-
+    
     if (!child.isLeaf) {
       child.children.push(...sibling.children);
     }
-
+    
     parent.keys.splice(index, 1);
     parent.children.splice(index + 1, 1);
   }
