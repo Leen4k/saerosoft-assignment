@@ -21,6 +21,8 @@ import ReactDomTree from "./components/week6/ReactDomTree";
 import Week6Assignment from "./components/week6/Week6Assignment";
 import TreeInsertionAndDeletion from "./components/week8/TreeInsertionAndDeletion";
 import Week8Assignment from "./components/week8/Week8Assignment";
+import Week9Assignment from "./components/week9/Week9Assignment";
+import DictionaryImplementationWithTrie from "./components/week9/DictionaryImplementationWithTrie";
 
 const App = () => {
   return (
@@ -61,6 +63,11 @@ const App = () => {
             <li>
               <Link to="/week8-assignments" className="hover:text-gray-300">
                 Week 8 Assignments
+              </Link>
+            </li>
+            <li>
+              <Link to="/week9-assignments" className="hover:text-gray-300">
+                Week 9 Assignments
               </Link>
             </li>
           </ul>
@@ -132,6 +139,12 @@ const App = () => {
             <Route
               path="/week8-assignments/tree-insertion-deletion"
               element={<TreeInsertionAndDeletion />}
+            />
+            {/* week 9 */}
+            <Route path="/week9-assignments" element={<Week9Assignment />} />
+            <Route
+              path="/week9-assignments/dictionary-implementation-with-trie"
+              element={<DictionaryImplementationWithTrie />}
             />
           </Routes>
         </div>

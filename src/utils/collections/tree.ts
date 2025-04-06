@@ -2,6 +2,18 @@ export interface TreeNodeData {
   id: string;
 }
 
+export abstract class AbstractTree<TNode, TData> {
+  root: TNode;
+
+  constructor(root: TNode) {
+    this.root = root;
+  }
+
+  abstract findNodeById(id: string): TNode | null;
+  abstract deleteNodeById(id: string): boolean;
+  abstract insertNode(parentId: string, newNode: TNode): boolean;
+}
+
 export class TreeNode<T> {
   id: string;
   data: T;
@@ -21,11 +33,9 @@ export class TreeNode<T> {
   }
 }
 
-export class Tree<T> {
-  root: TreeNode<T>;
-
+export class Tree<T> extends AbstractTree<TreeNode<T>, T> {
   constructor(root: TreeNode<T>) {
-    this.root = root;
+    super(root);
   }
 
   static createNode<T>(
