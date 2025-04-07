@@ -23,12 +23,12 @@ describe("BTree", () => {
       expect(tree.search(10)).toBe("ten");
       expect(tree.search(20)).toBe("twenty");
       expect(tree.search(5)).toBe("five");
-      expect(tree.search(30)).toBeNull(); 
+      expect(tree.search(30)).toBeNull();
     });
 
     test("should update value if key already exists", () => {
       tree.insert(10, "ten");
-      tree.insert(10, "TEN"); 
+      tree.insert(10, "TEN");
 
       expect(tree.search(10)).toBe("TEN");
     });
