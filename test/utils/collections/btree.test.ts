@@ -149,3 +149,188 @@ describe("BTree", () => {
     });
   });
 });
+
+describe("BTree insert step-by-step", () => {
+  let tree: BTree<number, number>;
+
+  beforeEach(() => (tree = new BTree<number, number>(3)));
+
+  test("insert 10", () => {
+    [10].forEach((n) => tree.insert(n, n));
+    console.log("Tree:\n" + tree.toString());
+
+    expect(tree.root.keys).toEqual([10]);
+  });
+
+  test("insert 10, 20", () => {
+    [10, 20].forEach((n) => tree.insert(n, n));
+    console.log("Tree:\n" + tree.toString());
+
+    expect(tree.root.keys).toEqual([10, 20]);
+  });
+
+  test("insert 10, 20, 5", () => {
+    [10, 20, 5].forEach((n) => tree.insert(n, n));
+    console.log("Tree:\n" + tree.toString());
+
+    expect(tree.root.keys).toEqual([5, 10, 20]);
+  });
+
+  test("insert 10, 20, 5, 6", () => {
+    [10, 20, 5, 6].forEach((n) => tree.insert(n, n));
+    console.log("Tree:\n" + tree.toString());
+
+    expect(tree.root.keys).toEqual([5, 6, 10, 20]);
+  });
+
+  test("insert 10, 20, 5, 6, 12", () => {
+    [10, 20, 5, 6, 12].forEach((n) => tree.insert(n, n));
+    console.log("Tree:\n" + tree.toString());
+
+    expect(tree.root.keys).toEqual([5, 6, 10, 12, 20]);
+  });
+
+  test("insert 10, 20, 5, 6, 12, 30", () => {
+    [10, 20, 5, 6, 12, 30].forEach((n) => tree.insert(n, n));
+    console.log("Tree:\n" + tree.toString());
+
+    expect(tree.root.keys).toEqual([10]);
+    const [left, right] = tree.root.children!;
+    expect(left.keys).toEqual([5, 6]);
+    expect(right.keys).toEqual([12, 20, 30]);
+  });
+
+  test("insert 10, 20, 5, 6, 12, 30, 7", () => {
+    [10, 20, 5, 6, 12, 30, 7].forEach((n) => tree.insert(n, n));
+    console.log("Tree:\n" + tree.toString());
+
+    expect(tree.root.keys).toEqual([10]);
+    const [left, right] = tree.root.children!;
+    expect(left.keys).toEqual([5, 6, 7]);
+    expect(right.keys).toEqual([12, 20, 30]);
+  });
+
+  test("insert 10, 20, 5, 6, 12, 30, 7, 17", () => {
+    [10, 20, 5, 6, 12, 30, 7, 17].forEach((n) => tree.insert(n, n));
+    console.log("Tree:\n" + tree.toString());
+
+    expect(tree.root.keys).toEqual([10]);
+    const [left, right] = tree.root.children!;
+    expect(left.keys).toEqual([5, 6, 7]);
+    expect(right.keys).toEqual([12, 17, 20, 30]);
+  });
+
+  test("bTree with depth 2 having maximum elements", () => {
+    Array.from({ length: 18 }).forEach((_, i) => tree.insert(i + 1, i + 1));
+    console.log("Tree:\n" + tree.toString());
+
+    const root = tree.root;
+    expect(root).toBeDefined();
+    expect(root.children).toBeDefined();
+
+    const hasGrandchildren = root.children!.some(
+      (child) => child.children && child.children.length > 0
+    );
+    expect(hasGrandchildren).toBe(false);
+  });
+
+  test("bTree with depth 3 having minimum elements", () => {
+    Array.from({ length: 19 }).forEach((_, i) => tree.insert(i + 1, i + 1));
+    console.log("Tree:\n" + tree.toString());
+
+    const root = tree.root;
+    expect(root).toBeDefined();
+    expect(root.children).toBeDefined();
+
+    const hasGrandchildren = root.children!.some(
+      (child) => child.children && child.children.length > 0
+    );
+    expect(hasGrandchildren).toBe(true);
+  });
+});
+
+describe("BTree delete step-by-step", () => {
+  let tree: BTree<number, number>;
+
+  test("delete from leaf node", () => {
+    tree = new BTree<number, number>(3);
+    [10, 20, 30, 5, 15, 25].forEach((n) => tree.insert(n, n));
+    console.log("Tree before deletion:\n" + tree.toString());
+
+    tree.delete(15);
+    console.log("Tree after deleting 15:\n" + tree.toString());
+
+    expect(tree.search(15)).toBeNull();
+    expect(tree.search(10)).toBe(10);
+    expect(tree.search(20)).toBe(20);
+  });
+
+  test("delete causing redistribution from left sibling", () => {
+    tree = new BTree<number, number>(2);
+    [10, 20, 30, 5, 15, 25, 35].forEach((n) => tree.insert(n, n));
+    console.log("Tree before deletion:\n" + tree.toString());
+
+    tree.delete(35);
+    console.log(
+      "Tree after deletion requiring redistribution:\n" + tree.toString()
+    );
+
+    expect(tree.search(35)).toBeNull();
+  });
+
+  test("delete causing merge of nodes", () => {
+    tree = new BTree<number, number>(2);
+    [10, 20, 30, 40, 5, 15, 25, 35, 45].forEach((n) => tree.insert(n, n));
+    console.log("Tree before deletion:\n" + tree.toString());
+
+    tree.delete(5);
+    tree.delete(15);
+    console.log("Tree after deletions causing merge:\n" + tree.toString());
+
+    expect(tree.search(5)).toBeNull();
+    expect(tree.search(15)).toBeNull();
+  });
+
+  test("delete from internal node with successor", () => {
+    tree = new BTree<number, number>(3);
+    [50, 30, 70, 10, 40, 60, 80, 5, 20, 35, 45, 55, 65, 75, 85].forEach((n) =>
+      tree.insert(n, n)
+    );
+    console.log("Tree before deletion:\n" + tree.toString());
+
+    tree.delete(30);
+    console.log("Tree after deleting internal node 30:\n" + tree.toString());
+
+    expect(tree.search(30)).toBeNull();
+    expect(tree.search(35)).toBe(35);
+  });
+
+  test("delete causing reduction in height", () => {
+    tree = new BTree<number, number>(2);
+    [10, 20, 30, 40, 50].forEach((n) => tree.insert(n, n));
+    console.log("Tree before deletions:\n" + tree.toString());
+
+    tree.delete(10);
+    tree.delete(20);
+    tree.delete(30);
+    console.log(
+      "Tree after deletions causing height reduction:\n" + tree.toString()
+    );
+
+    expect(tree.root.keys).toContain(40);
+    expect(tree.root.keys).toContain(50);
+    expect(tree.root.children).toEqual([]);
+  });
+
+  test("delete non-existent key", () => {
+    tree = new BTree<number, number>(3);
+    [10, 20, 30].forEach((n) => tree.insert(n, n));
+
+    tree.delete(99);
+
+    expect(tree.search(10)).toBe(10);
+    expect(tree.search(20)).toBe(20);
+    expect(tree.search(30)).toBe(30);
+    expect(tree.search(99)).toBeNull();
+  });
+});
