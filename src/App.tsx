@@ -23,18 +23,21 @@ import TreeInsertionAndDeletion from "./components/week8/TreeInsertionAndDeletio
 import Week8Assignment from "./components/week8/Week8Assignment";
 import Week9Assignment from "./components/week9/Week9Assignment";
 import DictionaryImplementationWithTrie from "./components/week9/DictionaryImplementationWithTrie";
+import Week11Assignment from "./components/week11/Week11Assignment";
+import NetworkOptimization from "./components/week11/NetworkOptimization";
+import TaskScheduler from "./components/week11/TaskScheduler";
 
 const App = () => {
   return (
     <Router>
       <div className="min-h-screen">
         <nav className="bg-gray-800 p-4 ">
-          <ul className="flex space-x-4 justify-center text-white nav-container">
-            <li>
+          <ul className="grid grid-cols-4 justify-center text-white">
+            {/* <li>
               <Link to="/" className="hover:text-gray-300">
                 Home
               </Link>
-            </li>
+            </li> */}
             <li>
               <Link to="/week1-assignments" className="hover:text-gray-300">
                 Week 1 Assignments
@@ -68,6 +71,11 @@ const App = () => {
             <li>
               <Link to="/week9-assignments" className="hover:text-gray-300">
                 Week 9 Assignments
+              </Link>
+            </li>
+            <li>
+              <Link to="/week11-assignments" className="hover:text-gray-300">
+                Week 11 Assignments
               </Link>
             </li>
           </ul>
@@ -145,6 +153,16 @@ const App = () => {
             <Route
               path="/week9-assignments/dictionary-implementation-with-trie"
               element={<DictionaryImplementationWithTrie />}
+            />
+            {/* week 11 */}
+            <Route path="/week11-assignments" element={<Week11Assignment />} />
+            <Route
+              path="/week11-assignments/network-optimization"
+              element={<NetworkOptimization />}
+            />
+            <Route
+              path="/week11-assignments/task-scheduler"
+              element={<TaskScheduler />}
             />
           </Routes>
         </div>
