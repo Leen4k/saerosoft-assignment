@@ -254,28 +254,58 @@ describe("BTree delete step-by-step", () => {
 
   test("delete from leaf node", () => {
     tree = new BTree<number, number>(3);
-    [10, 20, 30, 5, 15, 25].forEach((n) => tree.insert(n, n));
+    [10, 20, 30, 5, 15, 25, 35].forEach((n) => tree.insert(n, n));
     console.log("Tree before deletion:\n" + tree.toString());
 
-    tree.delete(15);
-    console.log("Tree after deleting 15:\n" + tree.toString());
+    const rootKeysBefore = [...tree.root.keys];
+    const childrenBefore = tree.root.children!.map((child) => [...child.keys]);
 
-    expect(tree.search(15)).toBeNull();
-    expect(tree.search(10)).toBe(10);
-    expect(tree.search(20)).toBe(20);
+    tree.delete(35);
+    console.log("Tree after deleting 35 from leaf node:\n" + tree.toString());
+
+    expect(tree.search(35)).toBeNull();
+
+    [5, 10, 15, 20, 25, 30].forEach((key) => {
+      expect(tree.search(key)).toBe(key);
+    });
+
+    expect(tree.root.keys).toEqual(rootKeysBefore);
+
+    const rightmostChild = tree.root.children![tree.root.children!.length - 1];
+    expect(rightmostChild.keys).not.toContain(35);
   });
 
   test("delete causing redistribution from left sibling", () => {
     tree = new BTree<number, number>(2);
-    [10, 20, 30, 5, 15, 25, 35].forEach((n) => tree.insert(n, n));
+    [10, 20, 30, 5, 15, 25, 35, 40].forEach((n) => tree.insert(n, n));
     console.log("Tree before deletion:\n" + tree.toString());
 
-    tree.delete(35);
+    const rootKeysBefore = [...tree.root.keys];
+    const childrenBefore = tree.root.children!.map((child) => [...child.keys]);
+
+    tree.delete(40);
     console.log(
       "Tree after deletion requiring redistribution:\n" + tree.toString()
     );
 
-    expect(tree.search(35)).toBeNull();
+    expect(tree.search(40)).toBeNull();
+
+    const rootKeysAfter = tree.root.keys;
+    const childrenAfter = tree.root.children!.map((child) => [...child.keys]);
+
+    expect(tree.root.children!.length).toBe(childrenBefore.length);
+
+    const sameChildren = childrenBefore.every(
+      (childKeys, index) =>
+        JSON.stringify(childKeys) === JSON.stringify(childrenAfter[index])
+    );
+
+    expect(sameChildren).toBe(false);
+
+    const rightmostChildKeys = childrenAfter[childrenAfter.length - 1];
+    expect(rightmostChildKeys.length).toBeGreaterThanOrEqual(
+      tree.minDegree - 1
+    );
   });
 
   test("delete causing merge of nodes", () => {

@@ -374,7 +374,7 @@ const NetworkGraphRenderer = ({
           </div>
           <div className="flex items-center">
             <div className="w-4 h-4 bg-orange-500 mr-2"></div>
-            <span>Path Edge</span>
+            <span>Minimum Cost Path</span>
           </div>
         </div>
 
@@ -383,7 +383,22 @@ const NetworkGraphRenderer = ({
             <p>
               Selected path: {selectedNodes[0]} → {selectedNodes[1]}
             </p>
-            {selectedPath && <p>Path cost: {selectedPath.totalCost}</p>}
+            {selectedPath && (
+              <div>
+                <p className="font-medium">
+                  Path cost: {selectedPath.totalCost}
+                </p>
+                <p className="text-sm">
+                  Route:{" "}
+                  {selectedPath.paths[0].map((step, i) => (
+                    <span key={i}>
+                      {step.from} → {step.to}
+                      {i < selectedPath.paths[0].length - 1 ? ", " : ""}
+                    </span>
+                  ))}
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -479,6 +494,14 @@ const NetworkOptimization = () => {
     <div className="p-4">
       <h1 className="text-2xl font-bold mb-4">Network Optimization System</h1>
 
+      <div className="bg-blue-50 p-3 rounded-md mb-4 border border-blue-200">
+        <p>
+          <span className="font-medium">How to use:</span> Click on two nodes in
+          the graph to find the minimum cost path between them. The path with
+          the lowest total weight will be highlighted in orange.
+        </p>
+      </div>
+
       <div className="mb-6">
         <h2 className="text-xl font-semibold mb-2">Network Graph</h2>
         {graph && (
@@ -487,6 +510,25 @@ const NetworkOptimization = () => {
             mst={mst}
             selectedPath={selectedPath}
           />
+        )}
+        {selectedPath && selectedPath.paths.length > 0 && (
+          <div className="mt-4 bg-orange-50 p-3 rounded-md border border-orange-200">
+            <h3 className="font-medium text-orange-700">Minimum Cost Path</h3>
+            <p>
+              From <strong>{selectedNodes?.[0]}</strong> to{" "}
+              <strong>{selectedNodes?.[1]}</strong>: Total Cost{" "}
+              <strong>{selectedPath.totalCost}</strong>
+            </p>
+            <p className="text-sm mt-1">
+              Route:{" "}
+              {selectedPath.paths[0].map((step, i) => (
+                <span key={i}>
+                  {step.from} → {step.to}
+                  {i < selectedPath.paths[0].length - 1 ? ", " : ""}
+                </span>
+              ))}
+            </p>
+          </div>
         )}
       </div>
 
@@ -583,6 +625,9 @@ const NetworkOptimization = () => {
             {selectedPath && selectedPath.paths.length > 0 ? (
               <div>
                 <p>Total Cost: {selectedPath.totalCost}</p>
+                <p className="text-green-600 font-medium">
+                  Minimum Cost Path Found!
+                </p>
                 <ul className="list-disc pl-5">
                   {selectedPath.paths[0].map((step, index) => (
                     <li key={index}>
