@@ -175,10 +175,12 @@ const NetworkGraphRenderer = ({
   graph,
   mst,
   selectedPath,
+  onNodesSelected,
 }: {
   graph: WeightedGraph;
   mst: MSTResult | null;
   selectedPath: PathResult | null;
+  onNodesSelected: (fromNode: string, toNode: string) => void;
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [nodePositions, setNodePositions] = useState<{
@@ -345,10 +347,15 @@ const NetworkGraphRenderer = ({
 
     if (!selectedNodes) {
       setSelectedNodes([hoveredNode, ""]);
+      onNodesSelected(hoveredNode, "");
     } else if (selectedNodes[0] && !selectedNodes[1]) {
-      setSelectedNodes([selectedNodes[0], hoveredNode]);
+      if (hoveredNode !== selectedNodes[0]) {
+        setSelectedNodes([selectedNodes[0], hoveredNode]);
+        onNodesSelected(selectedNodes[0], hoveredNode);
+      }
     } else {
       setSelectedNodes([hoveredNode, ""]);
+      onNodesSelected(hoveredNode, "");
     }
   };
 
@@ -378,26 +385,19 @@ const NetworkGraphRenderer = ({
           </div>
         </div>
 
-        {selectedNodes && selectedNodes[0] && selectedNodes[1] && (
-          <div className="mt-2">
-            <p>
-              Selected path: {selectedNodes[0]} → {selectedNodes[1]}
-            </p>
-            {selectedPath && (
-              <div>
-                <p className="font-medium">
-                  Path cost: {selectedPath.totalCost}
-                </p>
-                <p className="text-sm">
-                  Route:{" "}
-                  {selectedPath.paths[0].map((step, i) => (
-                    <span key={i}>
-                      {step.from} → {step.to}
-                      {i < selectedPath.paths[0].length - 1 ? ", " : ""}
-                    </span>
-                  ))}
-                </p>
-              </div>
+        {selectedNodes && selectedNodes[0] && (
+          <div className="mt-3 p-2 bg-blue-50 rounded border border-blue-100">
+            {!selectedNodes[1] ? (
+              <p className="text-blue-800">
+                Selected first node: <strong>{selectedNodes[0]}</strong>. Please
+                select a destination node.
+              </p>
+            ) : (
+              <p className="text-blue-800">
+                Finding minimum cost path from{" "}
+                <strong>{selectedNodes[0]}</strong> to{" "}
+                <strong>{selectedNodes[1]}</strong>
+              </p>
             )}
           </div>
         )}
@@ -444,19 +444,6 @@ const NetworkOptimization = () => {
     setMst(newMst);
   }, [customNodes, customEdges]);
 
-  useEffect(() => {
-    if (graph && selectedNodes && selectedNodes[0] && selectedNodes[1]) {
-      const path = findMinimumCostPath(
-        graph,
-        selectedNodes[0],
-        selectedNodes[1]
-      );
-      setSelectedPath(path);
-    } else {
-      setSelectedPath(null);
-    }
-  }, [graph, selectedNodes]);
-
   const handleAddNode = () => {
     if (nodeInput && !customNodes.includes(nodeInput)) {
       setCustomNodes([...customNodes, nodeInput]);
@@ -490,15 +477,26 @@ const NetworkOptimization = () => {
     setSelectedPath(null);
   };
 
+  const handleNodeSelection = (fromNode: string, toNode: string) => {
+    setSelectedNodes([fromNode, toNode]);
+    if (graph) {
+      if (toNode === "") {
+        setSelectedPath(null);
+      } else {
+        const path = findMinimumCostPath(graph, fromNode, toNode);
+        setSelectedPath(path);
+      }
+    }
+  };
+
   return (
     <div className="p-4">
       <h1 className="text-2xl font-bold mb-4">Network Optimization System</h1>
 
       <div className="bg-blue-50 p-3 rounded-md mb-4 border border-blue-200">
         <p>
-          <span className="font-medium">How to use:</span> Click on two nodes in
-          the graph to find the minimum cost path between them. The path with
-          the lowest total weight will be highlighted in orange.
+          please select the starting node and then the destination node to find
+          the minimum cost path
         </p>
       </div>
 
@@ -509,6 +507,7 @@ const NetworkOptimization = () => {
             graph={graph}
             mst={mst}
             selectedPath={selectedPath}
+            onNodesSelected={handleNodeSelection}
           />
         )}
         {selectedPath && selectedPath.paths.length > 0 && (

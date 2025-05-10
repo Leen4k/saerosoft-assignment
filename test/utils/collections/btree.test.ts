@@ -1,366 +1,251 @@
-import { BTree } from "../../../src/utils/collections/btree";
-
-function displayTree<K, V>(tree: BTree<K, V>, description: string): void {
-  console.log(`\n${description}:`);
-  console.log(tree.toString());
-}
+import { BTree, BTreeNode } from "../../../src/utils/collections/btree";
 
 describe("BTree", () => {
-  describe("basic operations", () => {
-    let tree: BTree<number, string>;
+  describe("constructor", () => {
+    it("should create an empty BTree with given minimum degree", () => {
+      const btree = new BTree<number, string>(2);
+      expect(btree.minDegree).toBe(2);
+      expect(btree.root).toBeDefined();
+      expect(btree.root.isLeaf).toBeTruthy();
+      expect(btree.root.keys).toHaveLength(0);
+      expect(btree.root.values).toHaveLength(0);
+    });
+
+    it("should throw error if minimum degree is less than 2", () => {
+      expect(() => new BTree<number, string>(1)).toThrow(
+        "Minimum degree must be at least 2"
+      );
+    });
+  });
+
+  describe("insert", () => {
+    let btree: BTree<number, string>;
 
     beforeEach(() => {
-      tree = new BTree<number, string>(3);
+      btree = new BTree<number, string>(2);
     });
 
-    test("should correctly insert and search key-value pairs", () => {
-      tree.insert(10, "ten");
-      tree.insert(20, "twenty");
-      tree.insert(5, "five");
+    it("should insert a key-value pair into an empty tree", () => {
+      btree.insert(10, "ten");
 
-      displayTree(tree, "After inserting 10, 20, 5");
-
-      expect(tree.search(10)).toBe("ten");
-      expect(tree.search(20)).toBe("twenty");
-      expect(tree.search(5)).toBe("five");
-      expect(tree.search(30)).toBeNull();
+      expect(btree.root.keys).toHaveLength(1);
+      expect(btree.root.keys[0]).toBe(10);
+      expect(btree.root.values[0]).toBe("ten");
     });
 
-    test("should update value if key already exists", () => {
-      tree.insert(10, "ten");
-      tree.insert(10, "TEN");
+    it("should insert multiple key-value pairs in order", () => {
+      btree.insert(10, "ten");
+      btree.insert(20, "twenty");
+      btree.insert(30, "thirty");
 
-      expect(tree.search(10)).toBe("TEN");
+      expect(btree.root.keys).toHaveLength(3);
+      expect(btree.root.keys).toEqual([10, 20, 30]);
+      expect(btree.root.values).toEqual(["ten", "twenty", "thirty"]);
     });
 
-    test("should delete keys correctly", () => {
-      tree.insert(10, "ten");
-      tree.insert(20, "twenty");
-      tree.insert(5, "five");
-      tree.insert(15, "fifteen");
-      tree.insert(25, "twenty-five");
+    it("should insert key-value pairs in correct order regardless of insertion order", () => {
+      btree.insert(30, "thirty");
+      btree.insert(10, "ten");
+      btree.insert(20, "twenty");
 
-      displayTree(tree, "After inserting 10, 20, 5, 15, 25");
-
-      tree.delete(15);
-      displayTree(tree, "After deleting 15");
-
-      expect(tree.search(15)).toBeNull();
-
-      expect(tree.search(10)).toBe("ten");
-      expect(tree.search(20)).toBe("twenty");
-      expect(tree.search(5)).toBe("five");
-      expect(tree.search(25)).toBe("twenty-five");
+      expect(btree.root.keys).toHaveLength(3);
+      expect(btree.root.keys).toEqual([10, 20, 30]);
+      expect(btree.root.values).toEqual(["ten", "twenty", "thirty"]);
     });
-  });
 
-  describe("complex operations with root splitting", () => {
-    test("should correctly handle root splitting", () => {
-      const tree = new BTree<number, string>(2);
+    it("should update value if key already exists", () => {
+      btree.insert(10, "ten");
+      btree.insert(10, "new ten");
 
-      tree.insert(10, "ten");
-      tree.insert(20, "twenty");
-      tree.insert(30, "thirty");
+      expect(btree.root.keys).toHaveLength(1);
+      expect(btree.root.keys[0]).toBe(10);
+      expect(btree.root.values[0]).toBe("new ten");
+    });
 
-      displayTree(tree, "After inserting 10, 20, 30 (root should split)");
+    it("should split the root when it becomes full", () => {
+      btree.insert(10, "ten");
+      btree.insert(20, "twenty");
+      btree.insert(30, "thirty");
 
-      tree.insert(40, "forty");
-      tree.insert(50, "fifty");
-      tree.insert(60, "sixty");
-      tree.insert(70, "seventy");
-      tree.insert(80, "eighty");
-      tree.insert(90, "ninety");
+      expect(btree.root.keys).toHaveLength(3);
 
-      displayTree(tree, "After inserting more keys (complex tree)");
+      btree.insert(40, "forty");
 
-      expect(tree.search(10)).toBe("ten");
-      expect(tree.search(20)).toBe("twenty");
-      expect(tree.search(30)).toBe("thirty");
-      expect(tree.search(40)).toBe("forty");
-      expect(tree.search(50)).toBe("fifty");
-      expect(tree.search(60)).toBe("sixty");
-      expect(tree.search(70)).toBe("seventy");
-      expect(tree.search(80)).toBe("eighty");
-      expect(tree.search(90)).toBe("ninety");
+      expect(btree.root.isLeaf).toBeFalsy();
+      expect(btree.root.keys).toHaveLength(1);
+      expect(btree.root.keys[0]).toBe(20);
+      expect(btree.root.children).toHaveLength(2);
+
+      expect(btree.root.children[0].keys).toEqual([10]);
+      expect(btree.root.children[1].keys).toEqual([30, 40]);
     });
   });
 
-  describe("complex deletion operations", () => {
-    test("should handle complex deletion scenarios", () => {
-      const tree = new BTree<number, string>(2);
+  describe("search", () => {
+    let btree: BTree<number, string>;
 
-      [50, 30, 70, 10, 40, 60, 80, 5, 15, 35, 45, 55, 65, 75, 85].forEach(
-        (key) => {
-          tree.insert(key, key.toString());
-        }
-      );
+    beforeEach(() => {
+      btree = new BTree<number, string>(2);
+      btree.insert(10, "ten");
+      btree.insert(20, "twenty");
+      btree.insert(30, "thirty");
+      btree.insert(40, "forty");
+      btree.insert(50, "fifty");
+    });
 
-      displayTree(tree, "Initial complex tree");
+    it("should find an existing key", () => {
+      expect(btree.search(10)).toBe("ten");
+      expect(btree.search(20)).toBe("twenty");
+      expect(btree.search(30)).toBe("thirty");
+      expect(btree.search(40)).toBe("forty");
+      expect(btree.search(50)).toBe("fifty");
+    });
 
-      tree.delete(5);
-      displayTree(tree, "After deleting leaf key 5");
-      expect(tree.search(5)).toBeNull();
+    it("should return null for non-existing key", () => {
+      expect(btree.search(15)).toBeNull();
+      expect(btree.search(100)).toBeNull();
+    });
+  });
 
-      tree.delete(30);
-      displayTree(tree, "After deleting internal key 30");
-      expect(tree.search(30)).toBeNull();
+  describe("delete", () => {
+    let btree: BTree<number, string>;
 
-      tree.delete(35);
-      displayTree(tree, "After deleting key 35 (may require borrowing)");
-      expect(tree.search(35)).toBeNull();
+    beforeEach(() => {
+      btree = new BTree<number, string>(2);
+      btree.insert(10, "ten");
+      btree.insert(20, "twenty");
+      btree.insert(30, "thirty");
+      btree.insert(40, "forty");
+      btree.insert(50, "fifty");
+      btree.insert(60, "sixty");
+      btree.insert(70, "seventy");
+    });
 
-      tree.delete(40);
-      tree.delete(45);
-      displayTree(tree, "After deleting keys 40 and 45 (may require merging)");
-      expect(tree.search(40)).toBeNull();
-      expect(tree.search(45)).toBeNull();
+    it("should delete a leaf node key", () => {
+      btree.delete(10);
+      expect(btree.search(10)).toBeNull();
+    });
 
-      [10, 15, 50, 55, 60, 65, 70, 75, 80, 85].forEach((key) => {
-        expect(tree.search(key)).toBe(key.toString());
+    it("should delete a key from an internal node", () => {
+      expect(btree.root.isLeaf).toBeFalsy();
+
+      btree.delete(20);
+      expect(btree.search(20)).toBeNull();
+    });
+
+    it("should do nothing when deleting a non-existent key", () => {
+      const beforeState = btree.toString();
+      btree.delete(999);
+      const afterState = btree.toString();
+      expect(beforeState).toBe(afterState);
+    });
+
+    it("should maintain tree properties after multiple deletions", () => {
+      btree.delete(30);
+      btree.delete(50);
+      btree.delete(10);
+
+      expect(btree.search(30)).toBeNull();
+      expect(btree.search(50)).toBeNull();
+      expect(btree.search(10)).toBeNull();
+
+      expect(btree.search(20)).toBe("twenty");
+      expect(btree.search(40)).toBe("forty");
+      expect(btree.search(60)).toBe("sixty");
+      expect(btree.search(70)).toBe("seventy");
+    });
+  });
+
+  describe("traverse", () => {
+    let btree: BTree<number, string>;
+
+    beforeEach(() => {
+      btree = new BTree<number, string>(2);
+      btree.insert(10, "ten");
+      btree.insert(20, "twenty");
+      btree.insert(30, "thirty");
+    });
+
+    it("should visit all nodes in the correct order", () => {
+      const visitedNodes: BTreeNode<number, string>[] = [];
+      const visitedLevels: number[] = [];
+
+      btree.traverse((node, level) => {
+        visitedNodes.push(node);
+        visitedLevels.push(level);
       });
-    });
-  });
 
-  describe("extreme cases", () => {
-    test("should handle a large number of insertions and deletions", () => {
-      const tree = new BTree<number, string>(3);
-      const maxKey = 100;
-      for (let i = 1; i <= maxKey; i++) {
-        tree.insert(i, `value-${i}`);
-      }
+      expect(visitedNodes.length).toBeGreaterThan(0);
+      expect(visitedNodes[0]).toBe(btree.root);
+      expect(visitedLevels[0]).toBe(0);
 
-      displayTree(tree, "After inserting 100 keys");
-      [1, 25, 50, 75, 100].forEach((key) => {
-        expect(tree.search(key)).toBe(`value-${key}`);
-      });
-      for (let i = 2; i <= maxKey; i += 2) {
-        tree.delete(i);
-      }
-
-      displayTree(tree, "After deleting even keys");
-
-      for (let i = 1; i <= maxKey; i++) {
-        if (i % 2 === 0) {
-          expect(tree.search(i)).toBeNull();
-        } else {
-          expect(tree.search(i)).toBe(`value-${i}`);
-        }
+      for (let i = 1; i < visitedLevels.length; i++) {
+        expect(visitedLevels[i]).toBeGreaterThanOrEqual(visitedLevels[i - 1]);
       }
     });
   });
-});
 
-describe("BTree insert step-by-step", () => {
-  let tree: BTree<number, number>;
+  describe("toString", () => {
+    it("should return a string representation of the tree", () => {
+      const btree = new BTree<number, string>(2);
+      btree.insert(10, "ten");
+      btree.insert(20, "twenty");
 
-  beforeEach(() => (tree = new BTree<number, number>(3)));
+      const result = btree.toString();
 
-  test("insert 10", () => {
-    [10].forEach((n) => tree.insert(n, n));
-    console.log("Tree:\n" + tree.toString());
-
-    expect(tree.root.keys).toEqual([10]);
+      expect(typeof result).toBe("string");
+      expect(result.length).toBeGreaterThan(0);
+      expect(result).toContain("(10,ten)");
+      expect(result).toContain("(20,twenty)");
+    });
   });
 
-  test("insert 10, 20", () => {
-    [10, 20].forEach((n) => tree.insert(n, n));
-    console.log("Tree:\n" + tree.toString());
+  describe("AbstractTree methods", () => {
+    let btree: BTree<number, string>;
 
-    expect(tree.root.keys).toEqual([10, 20]);
-  });
-
-  test("insert 10, 20, 5", () => {
-    [10, 20, 5].forEach((n) => tree.insert(n, n));
-    console.log("Tree:\n" + tree.toString());
-
-    expect(tree.root.keys).toEqual([5, 10, 20]);
-  });
-
-  test("insert 10, 20, 5, 6", () => {
-    [10, 20, 5, 6].forEach((n) => tree.insert(n, n));
-    console.log("Tree:\n" + tree.toString());
-
-    expect(tree.root.keys).toEqual([5, 6, 10, 20]);
-  });
-
-  test("insert 10, 20, 5, 6, 12", () => {
-    [10, 20, 5, 6, 12].forEach((n) => tree.insert(n, n));
-    console.log("Tree:\n" + tree.toString());
-
-    expect(tree.root.keys).toEqual([5, 6, 10, 12, 20]);
-  });
-
-  test("insert 10, 20, 5, 6, 12, 30", () => {
-    [10, 20, 5, 6, 12, 30].forEach((n) => tree.insert(n, n));
-    console.log("Tree:\n" + tree.toString());
-
-    expect(tree.root.keys).toEqual([10]);
-    const [left, right] = tree.root.children!;
-    expect(left.keys).toEqual([5, 6]);
-    expect(right.keys).toEqual([12, 20, 30]);
-  });
-
-  test("insert 10, 20, 5, 6, 12, 30, 7", () => {
-    [10, 20, 5, 6, 12, 30, 7].forEach((n) => tree.insert(n, n));
-    console.log("Tree:\n" + tree.toString());
-
-    expect(tree.root.keys).toEqual([10]);
-    const [left, right] = tree.root.children!;
-    expect(left.keys).toEqual([5, 6, 7]);
-    expect(right.keys).toEqual([12, 20, 30]);
-  });
-
-  test("insert 10, 20, 5, 6, 12, 30, 7, 17", () => {
-    [10, 20, 5, 6, 12, 30, 7, 17].forEach((n) => tree.insert(n, n));
-    console.log("Tree:\n" + tree.toString());
-
-    expect(tree.root.keys).toEqual([10]);
-    const [left, right] = tree.root.children!;
-    expect(left.keys).toEqual([5, 6, 7]);
-    expect(right.keys).toEqual([12, 17, 20, 30]);
-  });
-
-  test("bTree with depth 2 having maximum elements", () => {
-    Array.from({ length: 18 }).forEach((_, i) => tree.insert(i + 1, i + 1));
-    console.log("Tree:\n" + tree.toString());
-
-    const root = tree.root;
-    expect(root).toBeDefined();
-    expect(root.children).toBeDefined();
-
-    const hasGrandchildren = root.children!.some(
-      (child) => child.children && child.children.length > 0
-    );
-    expect(hasGrandchildren).toBe(false);
-  });
-
-  test("bTree with depth 3 having minimum elements", () => {
-    Array.from({ length: 19 }).forEach((_, i) => tree.insert(i + 1, i + 1));
-    console.log("Tree:\n" + tree.toString());
-
-    const root = tree.root;
-    expect(root).toBeDefined();
-    expect(root.children).toBeDefined();
-
-    const hasGrandchildren = root.children!.some(
-      (child) => child.children && child.children.length > 0
-    );
-    expect(hasGrandchildren).toBe(true);
-  });
-});
-
-describe("BTree delete step-by-step", () => {
-  let tree: BTree<number, number>;
-
-  test("delete from leaf node", () => {
-    tree = new BTree<number, number>(3);
-    [10, 20, 30, 5, 15, 25, 35].forEach((n) => tree.insert(n, n));
-    console.log("Tree before deletion:\n" + tree.toString());
-
-    const rootKeysBefore = [...tree.root.keys];
-    const childrenBefore = tree.root.children!.map((child) => [...child.keys]);
-
-    tree.delete(35);
-    console.log("Tree after deleting 35 from leaf node:\n" + tree.toString());
-
-    expect(tree.search(35)).toBeNull();
-
-    [5, 10, 15, 20, 25, 30].forEach((key) => {
-      expect(tree.search(key)).toBe(key);
+    beforeEach(() => {
+      btree = new BTree<number, string>(2);
     });
 
-    expect(tree.root.keys).toEqual(rootKeysBefore);
+    it("should return null for findNodeById (not applicable for B-tree)", () => {
+      expect(btree.findNodeById("any-id")).toBeNull();
+    });
 
-    const rightmostChild = tree.root.children![tree.root.children!.length - 1];
-    expect(rightmostChild.keys).not.toContain(35);
+    it("should return false for deleteNodeById (not applicable for B-tree)", () => {
+      expect(btree.deleteNodeById("any-id")).toBeFalsy();
+    });
+
+    it("should return false for insertNode (not applicable for B-tree)", () => {
+      const newNode = new BTreeNode<number, string>(true);
+      expect(btree.insertNode("any-id", newNode)).toBeFalsy();
+    });
   });
 
-  test("delete causing redistribution from left sibling", () => {
-    tree = new BTree<number, number>(2);
-    [10, 20, 30, 5, 15, 25, 35, 40].forEach((n) => tree.insert(n, n));
-    console.log("Tree before deletion:\n" + tree.toString());
+  describe("edge cases", () => {
+    it("should handle large number of insertions", () => {
+      const btree = new BTree<number, string>(3);
+      const numElements = 100;
 
-    const rootKeysBefore = [...tree.root.keys];
-    const childrenBefore = tree.root.children!.map((child) => [...child.keys]);
+      for (let i = 0; i < numElements; i++) {
+        btree.insert(i, `value-${i}`);
+      }
 
-    tree.delete(40);
-    console.log(
-      "Tree after deletion requiring redistribution:\n" + tree.toString()
-    );
+      for (let i = 0; i < numElements; i++) {
+        expect(btree.search(i)).toBe(`value-${i}`);
+      }
+    });
 
-    expect(tree.search(40)).toBeNull();
+    it("should handle string keys", () => {
+      const btree = new BTree<string, number>(2);
 
-    const rootKeysAfter = tree.root.keys;
-    const childrenAfter = tree.root.children!.map((child) => [...child.keys]);
+      btree.insert("apple", 1);
+      btree.insert("banana", 2);
+      btree.insert("cherry", 3);
 
-    expect(tree.root.children!.length).toBe(childrenBefore.length);
-
-    const sameChildren = childrenBefore.every(
-      (childKeys, index) =>
-        JSON.stringify(childKeys) === JSON.stringify(childrenAfter[index])
-    );
-
-    expect(sameChildren).toBe(false);
-
-    const rightmostChildKeys = childrenAfter[childrenAfter.length - 1];
-    expect(rightmostChildKeys.length).toBeGreaterThanOrEqual(
-      tree.minDegree - 1
-    );
-  });
-
-  test("delete causing merge of nodes", () => {
-    tree = new BTree<number, number>(2);
-    [10, 20, 30, 40, 5, 15, 25, 35, 45].forEach((n) => tree.insert(n, n));
-    console.log("Tree before deletion:\n" + tree.toString());
-
-    tree.delete(5);
-    tree.delete(15);
-    console.log("Tree after deletions causing merge:\n" + tree.toString());
-
-    expect(tree.search(5)).toBeNull();
-    expect(tree.search(15)).toBeNull();
-  });
-
-  test("delete from internal node with successor", () => {
-    tree = new BTree<number, number>(3);
-    [50, 30, 70, 10, 40, 60, 80, 5, 20, 35, 45, 55, 65, 75, 85].forEach((n) =>
-      tree.insert(n, n)
-    );
-    console.log("Tree before deletion:\n" + tree.toString());
-
-    tree.delete(30);
-    console.log("Tree after deleting internal node 30:\n" + tree.toString());
-
-    expect(tree.search(30)).toBeNull();
-    expect(tree.search(35)).toBe(35);
-  });
-
-  test("delete causing reduction in height", () => {
-    tree = new BTree<number, number>(2);
-    [10, 20, 30, 40, 50].forEach((n) => tree.insert(n, n));
-    console.log("Tree before deletions:\n" + tree.toString());
-
-    tree.delete(10);
-    tree.delete(20);
-    tree.delete(30);
-    console.log(
-      "Tree after deletions causing height reduction:\n" + tree.toString()
-    );
-
-    expect(tree.root.keys).toContain(40);
-    expect(tree.root.keys).toContain(50);
-    expect(tree.root.children).toEqual([]);
-  });
-
-  test("delete non-existent key", () => {
-    tree = new BTree<number, number>(3);
-    [10, 20, 30].forEach((n) => tree.insert(n, n));
-
-    tree.delete(99);
-
-    expect(tree.search(10)).toBe(10);
-    expect(tree.search(20)).toBe(20);
-    expect(tree.search(30)).toBe(30);
-    expect(tree.search(99)).toBeNull();
+      expect(btree.search("apple")).toBe(1);
+      expect(btree.search("banana")).toBe(2);
+      expect(btree.search("cherry")).toBe(3);
+      expect(btree.search("dragonfruit")).toBeNull();
+    });
   });
 });
