@@ -67,7 +67,7 @@ export interface IPrioritized {
 export class PriorityQueue<T extends IPrioritized> extends Queue<T> {
   enqueue(item: T): void {
     const insertIndex = this.items.findIndex(
-      (existing) => existing.priority < item.priority
+      (existing) => existing.priority > item.priority
     );
 
     if (insertIndex === -1) {
